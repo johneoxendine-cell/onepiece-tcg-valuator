@@ -4,6 +4,101 @@ import { calculateBoosterEV, getSetValuationSummary } from '../services/valuatio
 
 const router = Router();
 
+// Map set names to official set codes based on onepiece-cardgame.com
+const SET_CODE_MAP = {
+  // Booster Packs (OP series)
+  'Romance Dawn': 'OP-01',
+  'Paramount War': 'OP-02',
+  'Pillars of Strength': 'OP-03',
+  'Kingdoms of Intrigue': 'OP-04',
+  'Awakening of the New Era': 'OP-05',
+  'Wings of the Captain': 'OP-06',
+  '500 Years in the Future': 'OP-07',
+  'Two Legends': 'OP-08',
+  'Emperors in the New World': 'OP-09',
+  'Royal Blood': 'OP-10',
+  'A Fist of Divine Speed': 'OP-11',
+  'Legacy of the Master': 'OP-12',
+  'Carrying On His Will': 'OP-13',
+  "The Azure Sea's Seven": 'OP-14',
+  // Extra Boosters
+  'Extra Booster: Memorial Collection': 'EB-01',
+  'Extra Booster: Anime 25th Collection': 'EB-02',
+  'Extra Booster: One Piece Heroines Edition': 'EB-03',
+  // Other
+  'Ultra Deck: The Three Brothers': 'ST-13',
+  'Learn Together Deck Set': 'ST-21',
+  'One Piece Collection Sets': 'PROMO',
+  'Revision Pack Cards': 'PROMO',
+};
+
+// Extract set code from name
+function getSetCode(name) {
+  // Premium Boosters - check Vol. 2 first (more specific)
+  if (name.includes('Premium Booster') && name.includes('Vol. 2')) return 'PRB-02';
+  if (name.includes('Premium Booster') && name.includes('Best')) return 'PRB-01';
+
+  // Check direct mapping
+  for (const [key, code] of Object.entries(SET_CODE_MAP)) {
+    if (name.includes(key)) return code;
+  }
+
+  // Extract Starter Deck number
+  const starterMatch = name.match(/Starter Deck (\d+)/i);
+  if (starterMatch) {
+    return `ST-${starterMatch[1].padStart(2, '0')}`;
+  }
+
+  // Extract Starter Deck EX
+  if (name.includes('Starter Deck EX')) return 'ST-EX';
+
+  // Ultra Deck
+  if (name.includes('Ultra Deck: The Three Captains')) return 'ST-10';
+  if (name.includes('Ultra Deck: The Three Brothers')) return 'ST-13';
+
+  // Pre-release / Promo
+  if (name.includes('Pre-Release') || name.includes('Promotion') || name.includes('Demo Deck')) {
+    return 'PROMO';
+  }
+
+  // Tournament cards
+  if (name.includes('Tournament Cards') || name.includes('Release Event')) {
+    return 'EVENT';
+  }
+
+  return null;
+}
+
+// Get category and sort order for a set
+function getSetSortInfo(name, code) {
+  if (!code) return { category: 99, order: 0 };
+
+  if (code.startsWith('OP-')) {
+    const num = parseInt(code.split('-')[1]) || 0;
+    return { category: 1, order: 100 - num }; // Boosters first, newest (higher num) first
+  }
+  if (code.startsWith('ST-')) {
+    const num = code === 'ST-EX' ? 99 : (parseInt(code.split('-')[1]) || 0);
+    return { category: 2, order: 100 - num }; // Starters second
+  }
+  if (code.startsWith('EB-')) {
+    const num = parseInt(code.split('-')[1]) || 0;
+    return { category: 3, order: 100 - num }; // Extra boosters
+  }
+  if (code.startsWith('PRB-')) {
+    const num = parseInt(code.split('-')[1]) || 0;
+    return { category: 4, order: 100 - num }; // Premium boosters
+  }
+  if (code === 'EVENT') {
+    return { category: 5, order: 0 }; // Event cards
+  }
+  if (code === 'PROMO') {
+    return { category: 6, order: 0 }; // Promos last
+  }
+
+  return { category: 99, order: 0 };
+}
+
 // GET /api/sets - List all One Piece sets
 router.get('/', (req, res) => {
   try {
@@ -12,17 +107,39 @@ router.get('/', (req, res) => {
       SELECT
         s.*,
         COUNT(DISTINCT c.id) as card_count,
-        AVG(v.current_price) as avg_card_price
+        AVG(v.current_price) as avg_card_price,
+        (SELECT image_url FROM cards WHERE set_id = s.id AND image_url IS NOT NULL LIMIT 1) as image_url
       FROM sets s
       LEFT JOIN cards c ON s.id = c.set_id
       LEFT JOIN variants v ON c.id = v.card_id
       WHERE s.game_id = 'one-piece-card-game'
       GROUP BY s.id
-      ORDER BY s.release_date DESC
     `);
 
     const sets = stmt.all();
-    res.json(sets);
+
+    // Add set codes and sort info
+    const setsWithCodes = sets.map(set => {
+      const set_code = getSetCode(set.name);
+      const sortInfo = getSetSortInfo(set.name, set_code);
+      return {
+        ...set,
+        set_code,
+        _category: sortInfo.category,
+        _order: sortInfo.order
+      };
+    });
+
+    // Sort by category, then by order (newest first within category)
+    setsWithCodes.sort((a, b) => {
+      if (a._category !== b._category) return a._category - b._category;
+      return a._order - b._order;
+    });
+
+    // Remove internal sort fields
+    const result = setsWithCodes.map(({ _category, _order, ...set }) => set);
+
+    res.json(result);
 
   } catch (error) {
     console.error('Error fetching sets:', error);

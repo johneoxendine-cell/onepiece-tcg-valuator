@@ -87,12 +87,20 @@ router.get('/', (req, res) => {
       price: 'v.current_price',
       rarity: 'c.rarity',
       deviation: '((v.current_price - v.avg_30d) / v.avg_30d * 100)',
-      change: 'v.change_7d'
+      change: 'v.change_7d',
+      // Sort by card number: extract numeric part after the dash (e.g., "ST22-001" -> 001)
+      number: "CAST(SUBSTR(c.number, INSTR(c.number, '-') + 1) AS INTEGER)"
     };
 
     const sortColumn = sortColumns[sort] || 'c.name';
     const sortOrder = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-    query += ` ORDER BY ${sortColumn} ${sortOrder}`;
+
+    // For number sort, handle N/A values by putting them last
+    if (sort === 'number') {
+      query += ` ORDER BY CASE WHEN c.number = 'N/A' OR c.number IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
+    } else {
+      query += ` ORDER BY ${sortColumn} ${sortOrder}`;
+    }
 
     // Pagination
     query += ` LIMIT ? OFFSET ?`;

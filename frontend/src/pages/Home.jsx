@@ -67,17 +67,34 @@ function Home() {
 }
 
 function SetCard({ set }) {
-  const { id, name } = set;
+  const { id, name, image_url, set_code } = set;
 
-  // Extract set code (e.g., "OP01", "ST01")
-  const codeMatch = name.match(/\b(OP|ST|EB|PRB)\d+\b/i);
-  const setCode = codeMatch ? codeMatch[0].toUpperCase() : name.slice(0, 3).toUpperCase();
+  // Use set_code from API, or extract from name as fallback
+  const displayCode = set_code || (() => {
+    const codeMatch = name.match(/\b(OP|ST|EB|PRB)[-]?\d+\b/i);
+    return codeMatch ? codeMatch[0].toUpperCase() : name.slice(0, 4).toUpperCase();
+  })();
 
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors">
       {/* Set Image Area */}
-      <div className="aspect-[4/3] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center p-4">
-        <span className="text-2xl font-bold text-gray-400">{setCode}</span>
+      <div className="aspect-[63/88] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden relative">
+        {image_url ? (
+          <img
+            src={image_url}
+            alt={name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-2xl font-bold text-gray-400">{displayCode}</span>
+        )}
+        {/* Set Code Badge */}
+        {displayCode && (
+          <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/70 text-white text-xs font-bold rounded">
+            {displayCode}
+          </span>
+        )}
       </div>
 
       {/* Set Info */}
