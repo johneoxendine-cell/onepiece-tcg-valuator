@@ -70,7 +70,7 @@ function CardModal({ card, onClose }) {
 }
 
 function VariantRow({ variant }) {
-  const { condition, printing, current_price, avg_30d, change_7d } = variant;
+  const { condition, printing, current_price, change_7d } = variant;
 
   const formatPrice = (price) => {
     if (price === null || price === undefined) return 'N/A';
@@ -97,18 +97,11 @@ function VariantRow({ variant }) {
 
       <div className="text-right">
         <div className="text-yellow-500 font-bold">{formatPrice(current_price)}</div>
-        <div className="flex items-center justify-end gap-2 text-xs">
-          {change_7d !== null && change_7d !== undefined && (
-            <span className={change_7d > 0 ? 'text-green-400' : change_7d < 0 ? 'text-red-400' : 'text-gray-400'}>
-              7d: {formatChange(change_7d)}
-            </span>
-          )}
-          {avg_30d && (
-            <span className="text-gray-400">
-              30d: {formatPrice(avg_30d)}
-            </span>
-          )}
-        </div>
+        {change_7d !== null && change_7d !== undefined && (
+          <div className={`text-xs ${change_7d > 0 ? 'text-green-400' : change_7d < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+            {formatChange(change_7d)}
+          </div>
+        )}
       </div>
     </div>
   );
