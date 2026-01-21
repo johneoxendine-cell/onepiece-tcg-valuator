@@ -3,7 +3,21 @@ import initSqlJs from 'sql.js';
 
 const dbPath = './data/onepiece.db';
 
-// TCGplayer CDN image URL patterns
+// Construct image URL from card number (e.g., "OP01-001", "ST18-005")
+function getCardImageUrl(cardNumber) {
+  if (!cardNumber || cardNumber === 'N/A') return null;
+
+  // Extract set code from card number (e.g., "OP01" from "OP01-001")
+  const match = cardNumber.match(/^([A-Z]+\d+)-(\d+)$/i);
+  if (!match) return null;
+
+  const fullNumber = cardNumber.toUpperCase();
+
+  // Use official Bandai One Piece TCG site
+  return `https://en.onepiece-cardgame.com/images/cardlist/card/${fullNumber}.png`;
+}
+
+// Fallback: Try TCGplayer CDN if we have the ID
 function getTCGplayerImageUrl(tcgplayerId) {
   if (!tcgplayerId) return null;
   return `https://tcgplayer-cdn.tcgplayer.com/product/${tcgplayerId}_200w.jpg`;
@@ -15,11 +29,11 @@ async function addCardImages() {
   const buffer = fs.readFileSync(dbPath);
   const db = new SQL.Database(buffer);
 
-  // Get all cards with TCGplayer IDs
+  // Get all cards with card numbers
   const stmt = db.prepare(`
-    SELECT id, name, tcgplayer_id
+    SELECT id, name, number, tcgplayer_id
     FROM cards
-    WHERE tcgplayer_id IS NOT NULL
+    WHERE number IS NOT NULL AND number != 'N/A'
   `);
 
   const cards = [];
@@ -28,17 +42,21 @@ async function addCardImages() {
   }
   stmt.free();
 
-  console.log(`Found ${cards.length} cards with tcgplayer_id...\n`);
+  console.log(`Found ${cards.length} cards with card numbers...\n`);
 
   let updated = 0;
+  let skipped = 0;
   for (const card of cards) {
-    const imageUrl = getTCGplayerImageUrl(card.tcgplayer_id);
+    // Try card number first, then tcgplayer_id as fallback
+    const imageUrl = getCardImageUrl(card.number) || getTCGplayerImageUrl(card.tcgplayer_id);
     if (imageUrl) {
       db.run('UPDATE cards SET image_url = ? WHERE id = ?', [imageUrl, card.id]);
       updated++;
       if (updated % 100 === 0) {
         console.log(`Updated ${updated}/${cards.length} cards...`);
       }
+    } else {
+      skipped++;
     }
   }
 
@@ -54,6 +72,7 @@ async function addCardImages() {
   console.log('IMAGE UPDATE COMPLETE');
   console.log('='.repeat(50));
   console.log(`Cards updated: ${updated}`);
+  console.log(`Cards skipped (no valid number): ${skipped}`);
   console.log(`Cards with images in DB: ${result[0].values[0][0]}`);
   console.log('='.repeat(50));
 
