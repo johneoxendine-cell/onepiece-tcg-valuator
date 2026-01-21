@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.valuation-badge {
+  @apply px-2 py-1 rounded text-xs font-bold uppercase;
+}
+
+.valuation-badge.undervalued {
+  @apply bg-green-600 text-white;
+}
+
+.valuation-badge.overvalued {
+  @apply bg-red-600 text-white;
+}
+
+.valuation-badge.fair {
+  @apply bg-gray-600 text-white;
+}
