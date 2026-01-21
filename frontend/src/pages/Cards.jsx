@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import api from '../services/api';
-import CardGrid from '../components/CardGrid';
-import SetSelector from '../components/SetSelector';
-import RarityFilter from '../components/RarityFilter';
+import CardCard from '../components/CardCard';
+import CardModal from '../components/CardModal';
 
 function Cards() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [cards, setCards] = useState([]);
   const [sets, setSets] = useState([]);
+  const [currentSet, setCurrentSet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
+  const [selectedCard, setSelectedCard] = useState(null);
 
-  // Filters from URL params
-  const selectedSet = searchParams.get('set_id') || '';
-  const selectedRarity = searchParams.get('rarity') || '';
-  const selectedValuation = searchParams.get('valuation') || '';
-  const sortBy = searchParams.get('sort') || 'price';
-  const sortOrder = searchParams.get('order') || 'desc';
+  // Get set_id from URL
+  const selectedSetId = searchParams.get('set_id') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = 24;
+  const limit = 48;
 
   // Update URL params
   const updateFilters = (updates) => {
@@ -33,7 +30,6 @@ function Cards() {
         newParams.delete(key);
       }
     });
-    // Reset to page 1 when filters change
     if (!updates.hasOwnProperty('page')) {
       newParams.set('page', '1');
     }
@@ -42,8 +38,15 @@ function Cards() {
 
   // Fetch sets on mount
   useEffect(() => {
-    api.getSets().then(setSets).catch(console.error);
-  }, []);
+    api.getSets().then(data => {
+      setSets(data || []);
+      // Find current set name
+      if (selectedSetId && data) {
+        const set = data.find(s => s.id === selectedSetId);
+        setCurrentSet(set);
+      }
+    }).catch(console.error);
+  }, [selectedSetId]);
 
   // Fetch cards when filters change
   useEffect(() => {
@@ -55,13 +58,11 @@ function Cards() {
         const params = {
           limit,
           offset: (page - 1) * limit,
-          sort: sortBy,
-          order: sortOrder
+          sort: 'name',
+          order: 'asc'
         };
 
-        if (selectedSet) params.set_id = selectedSet;
-        if (selectedRarity) params.rarity = selectedRarity;
-        if (selectedValuation) params.valuation = selectedValuation;
+        if (selectedSetId) params.set_id = selectedSetId;
 
         const data = await api.getCards(params);
         setCards(data.cards || []);
@@ -74,107 +75,101 @@ function Cards() {
     }
 
     fetchCards();
-  }, [selectedSet, selectedRarity, selectedValuation, sortBy, sortOrder, page]);
+  }, [selectedSetId, page]);
 
   const totalPages = Math.ceil(total / limit);
 
+  const handleCardClick = (card) => {
+    setSelectedCard(card);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedCard(null);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Back Link & Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Cards</h1>
-        <p className="text-gray-400 mt-1">
-          Browse and filter One Piece TCG cards by set, rarity, and valuation
+        <Link
+          to="/"
+          className="text-gray-400 hover:text-white text-sm mb-2 inline-flex items-center gap-1"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Sets
+        </Link>
+        <h1 className="text-2xl font-bold text-white mt-2">
+          {currentSet?.name || 'All Cards'}
+        </h1>
+        <p className="text-gray-400 text-sm mt-1">
+          {total} cards
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <SetSelector
-            sets={sets}
-            selectedSet={selectedSet}
-            onChange={(value) => updateFilters({ set_id: value })}
-            loading={loading}
-          />
-
-          <RarityFilter
-            selectedRarity={selectedRarity}
-            onChange={(value) => updateFilters({ rarity: value })}
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Valuation
-            </label>
-            <select
-              value={selectedValuation}
-              onChange={(e) => updateFilters({ valuation: e.target.value })}
-              className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-op-red"
-            >
-              <option value="">All</option>
-              <option value="undervalued">Undervalued</option>
-              <option value="overvalued">Overvalued</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Sort By
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => updateFilters({ sort: e.target.value })}
-              className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-op-red"
-            >
-              <option value="price">Price</option>
-              <option value="name">Name</option>
-              <option value="deviation">Deviation</option>
-              <option value="change">7d Change</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Order
-            </label>
-            <select
-              value={sortOrder}
-              onChange={(e) => updateFilters({ order: e.target.value })}
-              className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-op-red"
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Results count */}
-      <div className="flex items-center justify-between">
-        <p className="text-gray-400 text-sm">
-          Showing {cards.length} of {total} cards
-        </p>
-        {selectedValuation && (
-          <button
-            onClick={() => updateFilters({ valuation: '' })}
-            className="text-sm text-op-red hover:text-red-400"
+      {/* Set Selector (if no set selected) */}
+      {!selectedSetId && sets.length > 0 && (
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Select a Set
+          </label>
+          <select
+            value={selectedSetId}
+            onChange={(e) => updateFilters({ set_id: e.target.value })}
+            className="w-full max-w-md bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            Clear valuation filter
-          </button>
-        )}
-      </div>
+            <option value="">All Sets</option>
+            {sets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Card Grid */}
-      <CardGrid cards={cards} loading={loading} error={error} />
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <div className="text-gray-400">Loading cards...</div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <div className="text-red-400">Error: {error}</div>
+        </div>
+      )}
+
+      {/* Cards Grid */}
+      {!loading && !error && (
+        <div className="cards-grid">
+          {cards.map((card) => (
+            <CardCard
+              key={card.id}
+              card={card}
+              onClick={handleCardClick}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && cards.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          No cards found in this set.
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2 pt-4">
           <button
             onClick={() => updateFilters({ page: String(page - 1) })}
             disabled={page <= 1}
-            className="px-4 py-2 bg-gray-700 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
           >
             Previous
           </button>
@@ -186,11 +181,16 @@ function Cards() {
           <button
             onClick={() => updateFilters({ page: String(page + 1) })}
             disabled={page >= totalPages}
-            className="px-4 py-2 bg-gray-700 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
           >
             Next
           </button>
         </div>
+      )}
+
+      {/* Card Modal */}
+      {selectedCard && (
+        <CardModal card={selectedCard} onClose={handleCloseModal} />
       )}
     </div>
   );

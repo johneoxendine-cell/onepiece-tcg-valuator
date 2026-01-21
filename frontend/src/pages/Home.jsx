@@ -1,28 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import CardGrid from '../components/CardGrid';
 
 function Home() {
-  const [summary, setSummary] = useState(null);
-  const [undervalued, setUndervalued] = useState([]);
-  const [overvalued, setOvervalued] = useState([]);
+  const [sets, setSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchSets() {
       try {
         setLoading(true);
-        const [summaryData, undervaluedData, overvaluedData] = await Promise.all([
-          api.getSummary(),
-          api.getUndervaluedCards({ limit: 8 }),
-          api.getOvervaluedCards({ limit: 8 })
-        ]);
-
-        setSummary(summaryData);
-        setUndervalued(undervaluedData.cards || []);
-        setOvervalued(overvaluedData.cards || []);
+        const data = await api.getSets();
+        setSets(data || []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -30,145 +20,79 @@ function Home() {
       }
     }
 
-    fetchData();
+    fetchSets();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-gray-400">Loading sets...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-red-400">Error: {error}</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">
-          Find over/undervalued One Piece TCG cards based on market data
+      <div className="text-center py-4">
+        <h1 className="text-3xl font-bold text-white">One Piece TCG Collection</h1>
+        <p className="text-gray-400 mt-2">
+          Browse sets and view card prices
         </p>
       </div>
 
-      {/* Stats Cards */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Cards"
-            value={summary.stats?.totalCards || 0}
-          />
-          <StatCard
-            label="Sets"
-            value={summary.stats?.totalSets || 0}
-          />
-          <StatCard
-            label="Undervalued"
-            value={summary.stats?.undervaluedCount || 0}
-            color="green"
-          />
-          <StatCard
-            label="Overvalued"
-            value={summary.stats?.overvaluedCount || 0}
-            color="red"
-          />
-        </div>
-      )}
+      {/* Sets Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {sets.map((set) => (
+          <SetCard key={set.id} set={set} />
+        ))}
+      </div>
 
-      {/* Undervalued Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-green-400">
-            Top Undervalued Cards
-          </h2>
-          <Link
-            to="/cards?valuation=undervalued"
-            className="text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            View All &rarr;
-          </Link>
-        </div>
-        <CardGrid cards={undervalued} loading={loading} error={error} />
-      </section>
-
-      {/* Overvalued Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-red-400">
-            Top Overvalued Cards
-          </h2>
-          <Link
-            to="/cards?valuation=overvalued"
-            className="text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            View All &rarr;
-          </Link>
-        </div>
-        <CardGrid cards={overvalued} loading={loading} error={error} />
-      </section>
-
-      {/* Biggest Movers */}
-      {summary?.biggestMovers && summary.biggestMovers.length > 0 && (
-        <section>
-          <h2 className="text-xl font-bold text-white mb-4">
-            Biggest Price Movers (7d)
-          </h2>
-          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-700">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase">Card</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">Price</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">7d Change</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {summary.biggestMovers.map((card) => (
-                  <tr key={card.id} className="hover:bg-gray-700/50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {card.image_url && (
-                          <img
-                            src={card.image_url}
-                            alt={card.name}
-                            className="w-8 h-11 object-cover rounded"
-                          />
-                        )}
-                        <span className="font-medium">{card.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-op-gold font-bold">
-                      ${card.current_price?.toFixed(2) || 'N/A'}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-medium ${
-                      card.change_7d > 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {card.change_7d > 0 ? '+' : ''}{card.change_7d?.toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Last Sync Info */}
-      {summary?.lastSync && (
-        <div className="text-sm text-gray-500 text-center">
-          Last synced: {new Date(summary.lastSync.completedAt).toLocaleString()}
+      {/* Empty State */}
+      {sets.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          No sets found. Try syncing data first.
         </div>
       )}
     </div>
   );
 }
 
-function StatCard({ label, value, color = 'white' }) {
-  const colorClasses = {
-    white: 'text-white',
-    green: 'text-green-400',
-    red: 'text-red-400',
-    gold: 'text-op-gold'
-  };
+function SetCard({ set }) {
+  const { id, name } = set;
+
+  // Extract set code (e.g., "OP01", "ST01")
+  const codeMatch = name.match(/\b(OP|ST|EB|PRB)\d+\b/i);
+  const setCode = codeMatch ? codeMatch[0].toUpperCase() : name.slice(0, 3).toUpperCase();
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-      <p className="text-gray-400 text-sm">{label}</p>
-      <p className={`text-2xl font-bold ${colorClasses[color]}`}>
-        {value.toLocaleString()}
-      </p>
+    <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors">
+      {/* Set Image Area */}
+      <div className="aspect-[4/3] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center p-4">
+        <span className="text-2xl font-bold text-gray-400">{setCode}</span>
+      </div>
+
+      {/* Set Info */}
+      <div className="p-4">
+        <h3 className="text-sm font-medium text-white truncate" title={name}>
+          {name}
+        </h3>
+
+        <Link
+          to={`/cards?set_id=${id}`}
+          className="mt-3 block w-full text-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors"
+        >
+          View Collection
+        </Link>
+      </div>
     </div>
   );
 }

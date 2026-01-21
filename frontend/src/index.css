@@ -6,24 +6,27 @@ body {
   @apply bg-gray-900 text-gray-100;
 }
 
-.card-grid {
+/* Cards Grid */
+.cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
 }
 
-.valuation-badge {
-  @apply px-2 py-1 rounded text-xs font-bold uppercase;
+/* Card hover effect */
+.card-item {
+  @apply relative cursor-pointer transition-transform duration-200;
 }
 
-.valuation-badge.undervalued {
-  @apply bg-green-600 text-white;
+.card-item:hover {
+  transform: translateY(-4px);
 }
 
-.valuation-badge.overvalued {
-  @apply bg-red-600 text-white;
+/* Modal */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/70 flex items-center justify-center z-50;
 }
 
-.valuation-badge.fair {
-  @apply bg-gray-600 text-white;
+.modal-content {
+  @apply bg-gray-800 rounded-lg border-2 border-yellow-500/50 max-w-md w-full mx-4 overflow-hidden;
 }
