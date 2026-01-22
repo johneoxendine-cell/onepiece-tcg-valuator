@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import SetModal from '../components/SetModal';
 
 function Home() {
   const [sets, setSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSet, setSelectedSet] = useState(null);
 
   useEffect(() => {
     async function fetchSets() {
@@ -22,6 +24,14 @@ function Home() {
 
     fetchSets();
   }, []);
+
+  const handleSetClick = (set) => {
+    setSelectedSet(set);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedSet(null);
+  };
 
   if (loading) {
     return (
@@ -52,7 +62,7 @@ function Home() {
       {/* Sets Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {sets.map((set) => (
-          <SetCard key={set.id} set={set} />
+          <SetCard key={set.id} set={set} onSetClick={handleSetClick} />
         ))}
       </div>
 
@@ -62,11 +72,16 @@ function Home() {
           No sets found. Try syncing data first.
         </div>
       )}
+
+      {/* Set Modal */}
+      {selectedSet && (
+        <SetModal set={selectedSet} onClose={handleCloseModal} />
+      )}
     </div>
   );
 }
 
-function SetCard({ set }) {
+function SetCard({ set, onSetClick }) {
   const [imageError, setImageError] = useState(false);
   const { id, name, image_url, set_code } = set;
 
@@ -78,8 +93,11 @@ function SetCard({ set }) {
 
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors">
-      {/* Set Image Area */}
-      <div className="aspect-[63/88] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden relative">
+      {/* Set Image Area - Clickable for set details */}
+      <div
+        className="aspect-[63/88] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden relative cursor-pointer"
+        onClick={() => onSetClick(set)}
+      >
         {image_url && !imageError ? (
           <img
             src={image_url}
@@ -97,6 +115,12 @@ function SetCard({ set }) {
             {displayCode}
           </span>
         )}
+        {/* Click hint overlay */}
+        <div className="absolute inset-0 bg-black/0 hover:bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-all">
+          <span className="text-white text-sm font-medium bg-black/50 px-3 py-1 rounded">
+            View Value
+          </span>
+        </div>
       </div>
 
       {/* Set Info */}

@@ -376,8 +376,8 @@ function normalizeRarity(rarity) {
 export function getSetValuationSummary(setId) {
   const db = getDatabase();
 
-  // Get rarity-based summary
-  const stmt = db.prepare(`
+  // Get rarity-based summary (exclude sealed products)
+  const summaryStmt = db.prepare(`
     SELECT
       COUNT(*) as total_cards,
       SUM(v.current_price) as total_value,
@@ -402,9 +402,43 @@ export function getSetValuationSummary(setId) {
     ) rarity_avg ON c.set_id = rarity_avg.set_id AND c.rarity = rarity_avg.rarity
     WHERE c.set_id = ?
       AND v.current_price IS NOT NULL
+      AND c.rarity != 'None'
   `);
 
-  return stmt.get(UNDERVALUED_THRESHOLD, OVERVALUED_THRESHOLD, setId);
+  const summary = summaryStmt.get(UNDERVALUED_THRESHOLD, OVERVALUED_THRESHOLD, setId);
+
+  // Get top 10 most valuable cards (exclude sealed products)
+  const topCardsStmt = db.prepare(`
+    SELECT
+      c.id, c.name, c.rarity, c.number, c.image_url, c.tcgplayer_id,
+      v.current_price, v.change_7d, v.printing
+    FROM cards c
+    JOIN variants v ON c.id = v.card_id
+    WHERE c.set_id = ?
+      AND v.current_price IS NOT NULL
+      AND c.rarity != 'None'
+    ORDER BY v.current_price DESC
+    LIMIT 10
+  `);
+
+  const topCards = topCardsStmt.all(setId);
+
+  // Calculate top 10 total value
+  const top10Value = topCards.reduce((sum, card) => sum + (card.current_price || 0), 0);
+
+  // Add image_url helper for top cards (use TCGPlayer CDN if available)
+  const topCardsWithImages = topCards.map(card => ({
+    ...card,
+    image_url: card.tcgplayer_id
+      ? `https://tcgplayer-cdn.tcgplayer.com/product/${card.tcgplayer_id}_200w.jpg`
+      : card.image_url
+  }));
+
+  return {
+    ...summary,
+    top10_value: Math.round(top10Value * 100) / 100,
+    top_cards: topCardsWithImages
+  };
 }
 
 export default {

@@ -194,7 +194,7 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET /api/sets/:id - Get set details
+// GET /api/sets/:id - Get set details with valuation
 router.get('/:id', (req, res) => {
   try {
     const db = getDatabase();
@@ -214,11 +214,17 @@ router.get('/:id', (req, res) => {
       return res.status(404).json({ error: 'Set not found' });
     }
 
-    // Get valuation summary
+    // Add set code and image
+    const set_code = getSetCode(set.name);
+    const image_url = getBoxImageUrl(set_code);
+
+    // Get valuation summary with top 10 cards
     const valuationSummary = getSetValuationSummary(id);
 
     res.json({
       ...set,
+      set_code,
+      image_url,
       valuation: valuationSummary
     });
 

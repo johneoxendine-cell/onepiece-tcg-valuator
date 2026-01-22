@@ -125,9 +125,11 @@ router.get('/', (req, res) => {
     const sortColumn = sortColumns[sort] || 'c.name';
     const sortOrder = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
-    // For number sort, handle N/A values by putting them last
+    // Handle NULL values by putting them last for certain sort columns
     if (sort === 'number') {
       query += ` ORDER BY CASE WHEN c.number = 'N/A' OR c.number IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
+    } else if (sort === 'price') {
+      query += ` ORDER BY CASE WHEN v.current_price IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
     } else {
       query += ` ORDER BY ${sortColumn} ${sortOrder}`;
     }
