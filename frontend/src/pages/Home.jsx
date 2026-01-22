@@ -67,6 +67,7 @@ function Home() {
 }
 
 function SetCard({ set }) {
+  const [imageError, setImageError] = useState(false);
   const { id, name, image_url, set_code } = set;
 
   // Use set_code from API, or extract from name as fallback
@@ -79,12 +80,13 @@ function SetCard({ set }) {
     <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors">
       {/* Set Image Area */}
       <div className="aspect-[63/88] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden relative">
-        {image_url ? (
+        {image_url && !imageError ? (
           <img
             src={image_url}
             alt={name}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
           <span className="text-2xl font-bold text-gray-400">{displayCode}</span>

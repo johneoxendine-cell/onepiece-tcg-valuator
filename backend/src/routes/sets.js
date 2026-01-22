@@ -69,6 +69,52 @@ function getSetCode(name) {
   return null;
 }
 
+// Get booster box image URL for a set code
+function getBoxImageUrl(code) {
+  if (!code) return null;
+
+  // Convert set code to URL format (OP-01 -> op01, EB-01 -> eb01, etc.)
+  const urlCode = code.toLowerCase().replace('-', '');
+
+  // Booster packs, extra boosters, and premium boosters
+  if (code.startsWith('OP-') || code.startsWith('EB-') || code.startsWith('PRB-')) {
+    return `https://onepiece-cardgame.com/images/products/boosters/${urlCode}/img_thumbnail.png`;
+  }
+
+  // Starter decks use grouped folders with different naming patterns
+  if (code.startsWith('ST-')) {
+    const baseUrl = 'https://onepiece-cardgame.com/images/products/decks';
+
+    // ST-EX (Gear 5 EX) - special case
+    if (code === 'ST-EX') {
+      return `${baseUrl}/st21/img_thumbnail.png`;
+    }
+
+    const num = parseInt(code.split('-')[1]) || 0;
+
+    // Grouped folders with _st## suffix in filename
+    if (num >= 1 && num <= 4) {
+      return `${baseUrl}/st01-04/img_thumbnail_st${String(num).padStart(2, '0')}.png`;
+    }
+    if (num >= 15 && num <= 20) {
+      return `${baseUrl}/st15-20/img_thumbnail_st${String(num).padStart(2, '0')}.png`;
+    }
+    if (num >= 23 && num <= 28) {
+      return `${baseUrl}/st23-28/img_thumbnail_st${String(num).padStart(2, '0')}.png`;
+    }
+
+    // Individual folders with simple img_thumbnail.png
+    // ST-05 to ST-14, ST-21, ST-22, ST-29
+    if ((num >= 5 && num <= 14) || num === 21 || num === 22 || num === 29) {
+      return `${baseUrl}/st${String(num).padStart(2, '0')}/img_thumbnail.png`;
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
 // Get category and sort order for a set
 function getSetSortInfo(name, code) {
   if (!code) return { category: 99, order: 0 };
@@ -107,8 +153,7 @@ router.get('/', (req, res) => {
       SELECT
         s.*,
         COUNT(DISTINCT c.id) as card_count,
-        AVG(v.current_price) as avg_card_price,
-        (SELECT image_url FROM cards WHERE set_id = s.id AND image_url IS NOT NULL LIMIT 1) as image_url
+        AVG(v.current_price) as avg_card_price
       FROM sets s
       LEFT JOIN cards c ON s.id = c.set_id
       LEFT JOIN variants v ON c.id = v.card_id
@@ -118,13 +163,15 @@ router.get('/', (req, res) => {
 
     const sets = stmt.all();
 
-    // Add set codes and sort info
+    // Add set codes, box images, and sort info
     const setsWithCodes = sets.map(set => {
       const set_code = getSetCode(set.name);
       const sortInfo = getSetSortInfo(set.name, set_code);
+      const image_url = getBoxImageUrl(set_code);
       return {
         ...set,
         set_code,
+        image_url,
         _category: sortInfo.category,
         _order: sortInfo.order
       };
