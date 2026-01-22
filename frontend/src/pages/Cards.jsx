@@ -15,10 +15,23 @@ function Cards() {
   const [total, setTotal] = useState(0);
   const [selectedCard, setSelectedCard] = useState(null);
 
-  // Get set_id from URL
+  // Get filters from URL
   const selectedSetId = searchParams.get('set_id') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const sort = searchParams.get('sort') || 'price';
+  const order = searchParams.get('order') || 'desc';
   const limit = 48;
+
+  // Sort options for dropdown
+  const sortOptions = [
+    { value: 'price-desc', label: 'Price: High to Low' },
+    { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'rarity-desc', label: 'Rarity: Highest First' },
+    { value: 'rarity-asc', label: 'Rarity: Lowest First' },
+    { value: 'name-asc', label: 'Name: A to Z' },
+    { value: 'name-desc', label: 'Name: Z to A' },
+    { value: 'number-asc', label: 'Card Number' },
+  ];
 
   // Update URL params
   const updateFilters = (updates) => {
@@ -58,8 +71,8 @@ function Cards() {
         const params = {
           limit,
           offset: (page - 1) * limit,
-          sort: 'name',
-          order: 'asc'
+          sort,
+          order
         };
 
         if (selectedSetId) params.set_id = selectedSetId;
@@ -75,7 +88,7 @@ function Cards() {
     }
 
     fetchCards();
-  }, [selectedSetId, page]);
+  }, [selectedSetId, page, sort, order]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -108,26 +121,50 @@ function Cards() {
         </p>
       </div>
 
-      {/* Set Selector (if no set selected) */}
-      {!selectedSetId && sets.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Select a Set
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Set Selector (if no set selected) */}
+        {!selectedSetId && sets.length > 0 && (
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Set
+            </label>
+            <select
+              value={selectedSetId}
+              onChange={(e) => updateFilters({ set_id: e.target.value })}
+              className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">All Sets</option>
+              {sets.map((set) => (
+                <option key={set.id} value={set.id}>
+                  {set.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Sort Dropdown */}
+        <div className={selectedSetId ? 'w-full sm:w-auto' : ''}>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Sort By
           </label>
           <select
-            value={selectedSetId}
-            onChange={(e) => updateFilters({ set_id: e.target.value })}
-            className="w-full max-w-md bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={`${sort}-${order}`}
+            onChange={(e) => {
+              const [newSort, newOrder] = e.target.value.split('-');
+              updateFilters({ sort: newSort, order: newOrder });
+            }}
+            className="w-full sm:w-auto bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            <option value="">All Sets</option>
-            {sets.map((set) => (
-              <option key={set.id} value={set.id}>
-                {set.name}
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
-      )}
+      </div>
 
       {/* Loading State */}
       {loading && (

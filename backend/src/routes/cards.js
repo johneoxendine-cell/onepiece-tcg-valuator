@@ -81,11 +81,24 @@ router.get('/', (req, res) => {
                  AND ((v.current_price - v.avg_30d) / v.avg_30d * 100) > 15`;
     }
 
-    // Sorting
+    // Sorting - higher number = higher rarity for intuitive DESC sorting
+    const rarityRank = `CASE c.rarity
+      WHEN 'Treasure Rare' THEN 10
+      WHEN 'Secret Rare' THEN 9
+      WHEN 'Super Rare' THEN 8
+      WHEN 'Rare' THEN 7
+      WHEN 'Uncommon' THEN 6
+      WHEN 'Common' THEN 5
+      WHEN 'Leader' THEN 4
+      WHEN 'DON!!' THEN 3
+      WHEN 'Promo' THEN 2
+      ELSE 1
+    END`;
+
     const sortColumns = {
       name: 'c.name',
       price: 'v.current_price',
-      rarity: 'c.rarity',
+      rarity: rarityRank,
       deviation: '((v.current_price - v.avg_30d) / v.avg_30d * 100)',
       change: 'v.change_7d',
       // Sort by card number: extract numeric part after the dash (e.g., "ST22-001" -> 001)
