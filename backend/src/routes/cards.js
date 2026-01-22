@@ -4,6 +4,15 @@ import { calculateCardValuation } from '../services/valuation.js';
 
 const router = Router();
 
+// Helper to get the best image URL for a card
+// Prefers TCGPlayer images (unique per variant) over official images (shared per card number)
+function getCardImageUrl(card) {
+  if (card.tcgplayer_id) {
+    return `https://tcgplayer-cdn.tcgplayer.com/product/${card.tcgplayer_id}_200w.jpg`;
+  }
+  return card.image_url;
+}
+
 // GET /api/cards - List cards with filters
 router.get('/', (req, res) => {
   try {
@@ -23,7 +32,7 @@ router.get('/', (req, res) => {
 
     let query = `
       SELECT
-        c.id, c.name, c.rarity, c.number, c.image_url,
+        c.id, c.name, c.rarity, c.number, c.image_url, c.tcgplayer_id,
         c.set_id, s.name as set_name,
         v.id as variant_id, v.condition, v.printing,
         v.current_price, v.avg_7d, v.avg_30d, v.avg_90d,
@@ -122,9 +131,10 @@ router.get('/', (req, res) => {
     const stmt = db.prepare(query);
     const cards = stmt.all(...params);
 
-    // Add valuation to each card
+    // Add valuation and resolve image URLs to each card
     const cardsWithValuation = cards.map(card => ({
       ...card,
+      image_url: getCardImageUrl(card),
       valuation: card.current_price && card.avg_30d ? calculateCardValuation(card) : null
     }));
 
@@ -194,6 +204,7 @@ router.get('/:id', (req, res) => {
 
     res.json({
       ...card,
+      image_url: getCardImageUrl(card),
       variants: variantsWithValuation,
       priceHistory
     });
