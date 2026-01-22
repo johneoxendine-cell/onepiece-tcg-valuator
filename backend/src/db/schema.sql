@@ -23,6 +23,17 @@ CREATE TABLE IF NOT EXISTS cards (
   number TEXT,
   tcgplayer_id INTEGER,
   image_url TEXT,
+  -- OPTCG gameplay data
+  card_text TEXT,
+  card_type TEXT,
+  card_color TEXT,
+  card_cost INTEGER,
+  card_power INTEGER,
+  life INTEGER,
+  counter_amount INTEGER,
+  attribute TEXT,
+  sub_types TEXT,
+  optcg_image_url TEXT,
   FOREIGN KEY (set_id) REFERENCES sets(id)
 );
 

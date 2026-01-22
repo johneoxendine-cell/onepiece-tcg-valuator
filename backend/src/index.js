@@ -7,7 +7,7 @@ import { initializeDatabase } from './config/database.js';
 import cardsRouter from './routes/cards.js';
 import setsRouter from './routes/sets.js';
 import valuationRouter from './routes/valuation.js';
-import { scheduledSync, initialSync, fullResync, continueSync } from './services/sync.js';
+import { scheduledSync, initialSync, fullResync, continueSync, syncOPTCGData } from './services/sync.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,6 +66,17 @@ app.post('/api/sync/continue', async (req, res) => {
     res.json({ success: true, ...result });
   } catch (error) {
     console.error('Continue sync error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// OPTCG sync - enrich cards with gameplay data from OPTCG API
+app.post('/api/sync/optcg', async (req, res) => {
+  try {
+    const result = await syncOPTCGData();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('OPTCG sync error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

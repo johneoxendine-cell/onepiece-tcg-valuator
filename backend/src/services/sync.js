@@ -1,5 +1,6 @@
 import { getDatabase } from '../config/database.js';
 import justTCG from './justtcg.js';
+import optcgAPI, { normalizeOPTCGCard } from './optcg.js';
 
 const ONE_PIECE_GAME_ID = 'one-piece-card-game';
 
@@ -435,6 +436,138 @@ export async function continueSync() {
   };
 }
 
+// OPTCG API sync - enrich cards with gameplay data
+export async function syncOPTCGData() {
+  const db = getDatabase();
+  console.log('Syncing OPTCG gameplay data...');
+  logSync('optcg', 'started');
+
+  try {
+    // Ensure new columns exist (migration)
+    const newColumns = [
+      'card_text TEXT',
+      'card_type TEXT',
+      'card_color TEXT',
+      'card_cost INTEGER',
+      'card_power INTEGER',
+      'life INTEGER',
+      'counter_amount INTEGER',
+      'attribute TEXT',
+      'sub_types TEXT',
+      'optcg_image_url TEXT'
+    ];
+
+    for (const col of newColumns) {
+      const colName = col.split(' ')[0];
+      try {
+        db.exec(`ALTER TABLE cards ADD COLUMN ${col}`);
+        console.log(`Added column: ${colName}`);
+      } catch (e) {
+        // Column already exists, ignore
+      }
+    }
+
+    // Fetch all OPTCG data
+    console.log('Fetching set cards from OPTCG API...');
+    const setCards = await optcgAPI.getAllSetCards();
+    console.log(`Fetched ${setCards.length} set cards`);
+
+    console.log('Fetching starter deck cards from OPTCG API...');
+    const stCards = await optcgAPI.getAllSTCards();
+    console.log(`Fetched ${stCards.length} starter deck cards`);
+
+    // Try to fetch promo cards, but don't fail if endpoint is unavailable
+    let promoCards = [];
+    try {
+      console.log('Fetching promo cards from OPTCG API...');
+      promoCards = await optcgAPI.getAllPromoCards();
+      console.log(`Fetched ${promoCards.length} promo cards`);
+    } catch (err) {
+      console.log('Promo cards endpoint unavailable, skipping...');
+    }
+
+    // Combine all cards
+    const allOPTCGCards = [...setCards, ...stCards, ...promoCards];
+    console.log(`Total OPTCG cards: ${allOPTCGCards.length}`);
+
+    // Build lookup map by card_set_id (e.g., "OP01-001")
+    const optcgMap = new Map();
+    for (const card of allOPTCGCards) {
+      const key = card.card_set_id;
+      if (key && !optcgMap.has(key)) {
+        optcgMap.set(key, normalizeOPTCGCard(card));
+      }
+    }
+    console.log(`Unique card IDs in OPTCG: ${optcgMap.size}`);
+
+    // Get our cards that need enrichment
+    const cardsStmt = db.prepare(`
+      SELECT id, number FROM cards
+      WHERE card_text IS NULL OR card_type IS NULL
+    `);
+    const ourCards = cardsStmt.all();
+    console.log(`Cards needing enrichment: ${ourCards.length}`);
+
+    // Update our cards with OPTCG data
+    const updateStmt = db.prepare(`
+      UPDATE cards SET
+        card_text = ?,
+        card_type = ?,
+        card_color = ?,
+        card_cost = ?,
+        card_power = ?,
+        life = ?,
+        counter_amount = ?,
+        attribute = ?,
+        sub_types = ?,
+        optcg_image_url = ?
+      WHERE id = ?
+    `);
+
+    let matchedCount = 0;
+    let unmatchedCount = 0;
+
+    for (const card of ourCards) {
+      // Try to match by card number (e.g., "OP01-001")
+      const cardNumber = card.number;
+      const optcgData = optcgMap.get(cardNumber);
+
+      if (optcgData) {
+        updateStmt.run(
+          optcgData.card_text,
+          optcgData.card_type,
+          optcgData.card_color,
+          optcgData.card_cost,
+          optcgData.card_power,
+          optcgData.life,
+          optcgData.counter_amount,
+          optcgData.attribute,
+          optcgData.sub_types,
+          optcgData.optcg_image_url,
+          card.id
+        );
+        matchedCount++;
+      } else {
+        unmatchedCount++;
+      }
+    }
+
+    console.log(`Enriched ${matchedCount} cards, ${unmatchedCount} unmatched`);
+    logSync('optcg', 'completed', matchedCount);
+
+    return {
+      totalOPTCG: allOPTCGCards.length,
+      enriched: matchedCount,
+      unmatched: unmatchedCount
+    };
+
+  } catch (error) {
+    logSync('optcg', 'failed');
+    console.error('Failed to sync OPTCG data:', error.message);
+    throw error;
+  }
+}
+
 export default {
   syncSets,
   syncSetCards,
@@ -443,5 +576,6 @@ export default {
   scheduledSync,
   initialSync,
   fullResync,
-  continueSync
+  continueSync,
+  syncOPTCGData
 };
