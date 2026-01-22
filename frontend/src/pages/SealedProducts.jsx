@@ -4,16 +4,16 @@ import api from '../services/api';
 import CardCard from '../components/CardCard';
 import CardModal from '../components/CardModal';
 
-function Cards() {
+function SealedProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [cards, setCards] = useState([]);
+  const [products, setProducts] = useState([]);
   const [sets, setSets] = useState([]);
   const [currentSet, setCurrentSet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
-  const [selectedCard, setSelectedCard] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Get filters from URL
   const selectedSetId = searchParams.get('set_id') || '';
@@ -26,11 +26,8 @@ function Cards() {
   const sortOptions = [
     { value: 'price-desc', label: 'Price: High to Low' },
     { value: 'price-asc', label: 'Price: Low to High' },
-    { value: 'rarity-desc', label: 'Rarity: Highest First' },
-    { value: 'rarity-asc', label: 'Rarity: Lowest First' },
     { value: 'name-asc', label: 'Name: A to Z' },
     { value: 'name-desc', label: 'Name: Z to A' },
-    { value: 'number-asc', label: 'Card Number' },
   ];
 
   // Update URL params
@@ -61,9 +58,9 @@ function Cards() {
     }).catch(console.error);
   }, [selectedSetId]);
 
-  // Fetch cards when filters change
+  // Fetch sealed products when filters change
   useEffect(() => {
-    async function fetchCards() {
+    async function fetchProducts() {
       try {
         setLoading(true);
         setError(null);
@@ -73,13 +70,13 @@ function Cards() {
           offset: (page - 1) * limit,
           sort,
           order,
-          product_type: 'cards' // Exclude sealed products (booster boxes, packs, etc.)
+          product_type: 'sealed' // Only sealed products (booster boxes, packs, cases, etc.)
         };
 
         if (selectedSetId) params.set_id = selectedSetId;
 
         const data = await api.getCards(params);
-        setCards(data.cards || []);
+        setProducts(data.cards || []);
         setTotal(data.total || 0);
       } catch (err) {
         setError(err.message);
@@ -88,17 +85,17 @@ function Cards() {
       }
     }
 
-    fetchCards();
+    fetchProducts();
   }, [selectedSetId, page, sort, order]);
 
   const totalPages = Math.ceil(total / limit);
 
-  const handleCardClick = (card) => {
-    setSelectedCard(card);
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
   };
 
   const handleCloseModal = () => {
-    setSelectedCard(null);
+    setSelectedProduct(null);
   };
 
   return (
@@ -115,10 +112,10 @@ function Cards() {
           Back to Sets
         </Link>
         <h1 className="text-2xl font-bold text-white mt-2">
-          {currentSet?.name || 'All Cards'}
+          {currentSet?.name ? `${currentSet.name} - Sealed Products` : 'Booster Boxes & Sealed Products'}
         </h1>
         <p className="text-gray-400 text-sm mt-1">
-          {total} cards
+          {total} products
         </p>
       </div>
 
@@ -170,7 +167,7 @@ function Cards() {
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center min-h-[300px]">
-          <div className="text-gray-400">Loading cards...</div>
+          <div className="text-gray-400">Loading products...</div>
         </div>
       )}
 
@@ -181,23 +178,23 @@ function Cards() {
         </div>
       )}
 
-      {/* Cards Grid */}
+      {/* Products Grid */}
       {!loading && !error && (
         <div className="cards-grid">
-          {cards.map((card) => (
+          {products.map((product) => (
             <CardCard
-              key={card.id}
-              card={card}
-              onClick={handleCardClick}
+              key={product.id}
+              card={product}
+              onClick={handleProductClick}
             />
           ))}
         </div>
       )}
 
       {/* Empty State */}
-      {!loading && !error && cards.length === 0 && (
+      {!loading && !error && products.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          No cards found in this set.
+          No sealed products found.
         </div>
       )}
 
@@ -226,12 +223,12 @@ function Cards() {
         </div>
       )}
 
-      {/* Card Modal */}
-      {selectedCard && (
-        <CardModal card={selectedCard} onClose={handleCloseModal} />
+      {/* Product Modal */}
+      {selectedProduct && (
+        <CardModal card={selectedProduct} onClose={handleCloseModal} />
       )}
     </div>
   );
 }
 
-export default Cards;
+export default SealedProducts;

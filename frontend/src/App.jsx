@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
 import Home from './pages/Home';
 import Cards from './pages/Cards';
+import SealedProducts from './pages/SealedProducts';
 
 function App() {
   return (
@@ -40,6 +41,18 @@ function App() {
                 >
                   All Cards
                 </NavLink>
+                <NavLink
+                  to="/sealed"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-300 hover:text-white'
+                    }`
+                  }
+                >
+                  Booster Boxes
+                </NavLink>
               </div>
             </div>
           </div>
@@ -50,6 +63,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/cards" element={<Cards />} />
+            <Route path="/sealed" element={<SealedProducts />} />
           </Routes>
         </main>
 

@@ -24,6 +24,7 @@ router.get('/', (req, res) => {
       min_price,
       max_price,
       search,
+      product_type, // 'cards' = actual cards, 'sealed' = booster boxes/packs/cases
       sort = 'name',
       order = 'asc',
       limit = 50,
@@ -90,6 +91,13 @@ router.get('/', (req, res) => {
                  AND ((v.current_price - v.avg_30d) / v.avg_30d * 100) > 15`;
     }
 
+    // Product type filter: 'cards' = actual cards, 'sealed' = booster boxes/packs/cases
+    if (product_type === 'cards') {
+      query += ` AND c.rarity != 'None'`;
+    } else if (product_type === 'sealed') {
+      query += ` AND c.rarity = 'None'`;
+    }
+
     // Sorting - higher number = higher rarity for intuitive DESC sorting
     const rarityRank = `CASE c.rarity
       WHEN 'Treasure Rare' THEN 10
@@ -138,15 +146,36 @@ router.get('/', (req, res) => {
       valuation: card.current_price && card.avg_30d ? calculateCardValuation(card) : null
     }));
 
-    // Get total count for pagination
+    // Get total count for pagination (with same filters)
     let countQuery = `
-      SELECT COUNT(*) as total
+      SELECT COUNT(DISTINCT c.id) as total
       FROM cards c
+      JOIN sets s ON c.set_id = s.id
       LEFT JOIN variants v ON c.id = v.card_id
       WHERE 1=1
     `;
+    const countParams = [];
 
-    const total = db.prepare(countQuery).get()?.total || 0;
+    if (set_id) {
+      countQuery += ` AND c.set_id = ?`;
+      countParams.push(set_id);
+    }
+    if (rarity) {
+      countQuery += ` AND c.rarity = ?`;
+      countParams.push(rarity);
+    }
+    if (search) {
+      countQuery += ` AND c.name LIKE ?`;
+      countParams.push(`%${search}%`);
+    }
+    if (product_type === 'cards') {
+      countQuery += ` AND c.rarity != 'None'`;
+    } else if (product_type === 'sealed') {
+      countQuery += ` AND c.rarity = 'None'`;
+    }
+
+    const countStmt = db.prepare(countQuery);
+    const total = countStmt.get(...countParams)?.total || 0;
 
     res.json({
       cards: cardsWithValuation,
