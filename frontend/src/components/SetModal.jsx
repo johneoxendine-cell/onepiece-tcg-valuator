@@ -92,24 +92,10 @@ function SetModal({ set, onClose }) {
               </div>
 
               {/* Additional Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                  <div className="text-xs text-gray-400">Avg Card Price</div>
-                  <div className="text-lg font-bold text-white">
-                    {formatPrice(setDetails.valuation.avg_price)}
-                  </div>
-                </div>
-                <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                  <div className="text-xs text-gray-400">Undervalued</div>
-                  <div className="text-lg font-bold text-green-400">
-                    {setDetails.valuation.undervalued_count || 0}
-                  </div>
-                </div>
-                <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                  <div className="text-xs text-gray-400">Overvalued</div>
-                  <div className="text-lg font-bold text-red-400">
-                    {setDetails.valuation.overvalued_count || 0}
-                  </div>
+              <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                <div className="text-xs text-gray-400">Avg Top 10 Card Price</div>
+                <div className="text-lg font-bold text-white">
+                  {formatPrice(setDetails.valuation.top10_value / 10)}
                 </div>
               </div>
 
