@@ -7,8 +7,8 @@ dotenv.config();
 const API_BASE = 'https://api.justtcg.com/v1';
 const API_KEY = process.env.JUSTTCG_API_KEY;
 
-// Rate limiting: 10 requests/minute, 100/day
-const REQUEST_DELAY_MS = 6000; // 6 seconds between requests
+// Rate limiting: 50 requests/minute, 1000/day (Starter Plan)
+const REQUEST_DELAY_MS = 1200; // 1.2 seconds between requests (50/min)
 let lastRequestTime = 0;
 let dailyRequestCount = 0;
 let dailyRequestReset = Date.now();
@@ -28,8 +28,8 @@ function checkDailyReset() {
 async function rateLimitedRequest(fn) {
   checkDailyReset();
 
-  if (dailyRequestCount >= 100) {
-    throw new Error('Daily API limit reached (100 requests)');
+  if (dailyRequestCount >= 1000) {
+    throw new Error('Daily API limit reached (1000 requests)');
   }
 
   const now = Date.now();
@@ -116,7 +116,7 @@ export const justTCG = {
   async getSetCards(setId) {
     const allCards = [];
     let offset = 0;
-    const limit = 20; // API plan limit is 20 cards per request
+    const limit = 100; // Upgraded API plan allows 100 cards per request
     let hasMore = true;
 
     console.log(`Fetching cards for set: ${setId}`);
@@ -140,9 +140,9 @@ export const justTCG = {
         allCards.push(...cards);
       }
 
-      // Check pagination info
-      const pagination = response.data?.pagination;
-      hasMore = pagination?.hasMore === true;
+      // Check pagination info (API uses 'meta' not 'pagination')
+      const meta = response.data?.meta || response.data?.pagination;
+      hasMore = meta?.hasMore === true;
       offset += limit;
 
       if (hasMore) {
@@ -192,7 +192,7 @@ export const justTCG = {
   getRateLimitStatus() {
     checkDailyReset();
     return {
-      dailyRemaining: 100 - dailyRequestCount,
+      dailyRemaining: 1000 - dailyRequestCount,
       dailyUsed: dailyRequestCount,
       nextRequestAvailable: Math.max(0, REQUEST_DELAY_MS - (Date.now() - lastRequestTime))
     };
