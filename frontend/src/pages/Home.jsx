@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import SetModal from '../components/SetModal';
@@ -8,6 +8,17 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSet, setSelectedSet] = useState(null);
+  const [sortBy, setSortBy] = useState('default');
+
+  const sortOptions = [
+    { value: 'default', label: 'Default (By Type)' },
+    { value: 'total_value_desc', label: 'Total Set Value: High to Low' },
+    { value: 'total_value_asc', label: 'Total Set Value: Low to High' },
+    { value: 'top10_value_desc', label: 'Top 10 Value: High to Low' },
+    { value: 'top10_value_asc', label: 'Top 10 Value: Low to High' },
+    { value: 'avg_top10_price_desc', label: 'Avg Top 10 Price: High to Low' },
+    { value: 'avg_top10_price_asc', label: 'Avg Top 10 Price: Low to High' },
+  ];
 
   useEffect(() => {
     async function fetchSets() {
@@ -24,6 +35,30 @@ function Home() {
 
     fetchSets();
   }, []);
+
+  // Sort sets based on selected option
+  const sortedSets = useMemo(() => {
+    if (sortBy === 'default') return sets;
+
+    return [...sets].sort((a, b) => {
+      switch (sortBy) {
+        case 'total_value_desc':
+          return (b.total_value || 0) - (a.total_value || 0);
+        case 'total_value_asc':
+          return (a.total_value || 0) - (b.total_value || 0);
+        case 'top10_value_desc':
+          return (b.top10_value || 0) - (a.top10_value || 0);
+        case 'top10_value_asc':
+          return (a.top10_value || 0) - (b.top10_value || 0);
+        case 'avg_top10_price_desc':
+          return (b.avg_top10_price || 0) - (a.avg_top10_price || 0);
+        case 'avg_top10_price_asc':
+          return (a.avg_top10_price || 0) - (b.avg_top10_price || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [sets, sortBy]);
 
   const handleSetClick = (set) => {
     setSelectedSet(set);
@@ -59,9 +94,29 @@ function Home() {
         </p>
       </div>
 
+      {/* Sort Dropdown */}
+      <div className="flex justify-end">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Sort By
+          </label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Sets Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {sets.map((set) => (
+        {sortedSets.map((set) => (
           <SetCard key={set.id} set={set} onSetClick={handleSetClick} />
         ))}
       </div>

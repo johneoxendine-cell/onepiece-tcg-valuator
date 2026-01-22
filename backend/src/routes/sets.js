@@ -149,29 +149,64 @@ function getSetSortInfo(name, code) {
 router.get('/', (req, res) => {
   try {
     const db = getDatabase();
+
+    // Get basic set info
     const stmt = db.prepare(`
       SELECT
         s.*,
-        COUNT(DISTINCT c.id) as card_count,
-        AVG(v.current_price) as avg_card_price
+        COUNT(DISTINCT c.id) as card_count
       FROM sets s
       LEFT JOIN cards c ON s.id = c.set_id
-      LEFT JOIN variants v ON c.id = v.card_id
       WHERE s.game_id = 'one-piece-card-game'
       GROUP BY s.id
     `);
 
     const sets = stmt.all();
 
-    // Add set codes, box images, and sort info
+    // Get valuation data for all sets (total value, excluding sealed products)
+    const valuationStmt = db.prepare(`
+      SELECT
+        c.set_id,
+        SUM(v.current_price) as total_value
+      FROM cards c
+      JOIN variants v ON c.id = v.card_id
+      WHERE v.current_price IS NOT NULL
+        AND c.rarity != 'None'
+      GROUP BY c.set_id
+    `);
+    const valuationData = valuationStmt.all();
+    const valuationMap = Object.fromEntries(valuationData.map(v => [v.set_id, v.total_value]));
+
+    // Get top 10 value for each set
+    const top10Stmt = db.prepare(`
+      SELECT set_id, SUM(current_price) as top10_value FROM (
+        SELECT c.set_id, v.current_price,
+          ROW_NUMBER() OVER (PARTITION BY c.set_id ORDER BY v.current_price DESC) as rn
+        FROM cards c
+        JOIN variants v ON c.id = v.card_id
+        WHERE v.current_price IS NOT NULL
+          AND c.rarity != 'None'
+      ) WHERE rn <= 10
+      GROUP BY set_id
+    `);
+    const top10Data = top10Stmt.all();
+    const top10Map = Object.fromEntries(top10Data.map(v => [v.set_id, v.top10_value]));
+
+    // Add set codes, box images, valuation, and sort info
     const setsWithCodes = sets.map(set => {
       const set_code = getSetCode(set.name);
       const sortInfo = getSetSortInfo(set.name, set_code);
       const image_url = getBoxImageUrl(set_code);
+      const total_value = valuationMap[set.id] || 0;
+      const top10_value = top10Map[set.id] || 0;
+      const avg_top10_price = top10_value / 10;
       return {
         ...set,
         set_code,
         image_url,
+        total_value: Math.round(total_value * 100) / 100,
+        top10_value: Math.round(top10_value * 100) / 100,
+        avg_top10_price: Math.round(avg_top10_price * 100) / 100,
         _category: sortInfo.category,
         _order: sortInfo.order
       };
