@@ -1,4 +1,8 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const API_BASE = 'https://api.justtcg.com/v1';
 const API_KEY = process.env.JUSTTCG_API_KEY;
@@ -108,23 +112,46 @@ export const justTCG = {
     });
   },
 
-  // Get cards for a set
+  // Get cards for a set (with pagination to fetch all cards)
   async getSetCards(setId) {
-    return rateLimitedRequest(async () => {
-      console.log(`Fetching cards for set: ${setId}`);
-      // Use /cards endpoint with set filter and include price history/statistics
-      const response = await client.get(`/cards`, {
-        params: { 
-          set: setId,
-          include_price_history: true,
-          include_statistics: '7d,30d,90d',
-          priceHistoryDuration: '90d'
-        }
+    const allCards = [];
+    let offset = 0;
+    const limit = 20; // API plan limit is 20 cards per request
+    let hasMore = true;
+
+    console.log(`Fetching cards for set: ${setId}`);
+
+    while (hasMore) {
+      const response = await rateLimitedRequest(async () => {
+        return client.get(`/cards`, {
+          params: {
+            set: setId,
+            limit,
+            offset,
+            include_price_history: true,
+            include_statistics: '7d,30d,90d',
+            priceHistoryDuration: '90d'
+          }
+        });
       });
+
       const cards = extractData(response);
-      console.log(`Found ${Array.isArray(cards) ? cards.length : 'N/A'} cards for set ${setId}`);
-      return cards;
-    });
+      if (Array.isArray(cards)) {
+        allCards.push(...cards);
+      }
+
+      // Check pagination info
+      const pagination = response.data?.pagination;
+      hasMore = pagination?.hasMore === true;
+      offset += limit;
+
+      if (hasMore) {
+        console.log(`  Fetched ${allCards.length} cards so far, fetching more...`);
+      }
+    }
+
+    console.log(`Found ${allCards.length} total cards for set ${setId}`);
+    return allCards;
   },
 
   // Batch get card prices (up to 20 cards per request)
