@@ -178,9 +178,9 @@ function SealedProducts() {
         </div>
       )}
 
-      {/* Products Grid */}
+      {/* Products Grid - larger items for sealed products */}
       {!loading && !error && (
-        <div className="cards-grid">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
             <CardCard
               key={product.id}
