@@ -57,10 +57,47 @@ function Cards() {
   useEffect(() => {
     api.getSets().then(data => {
       setSets(data || []);
-      // Find current set name
+      // Find current set name - handle comma-separated IDs for grouped sets
       if (selectedSetId && data) {
-        const set = data.find(s => s.id === selectedSetId);
-        setCurrentSet(set);
+        const setIds = selectedSetId.split(',');
+        if (setIds.length === 1) {
+          // Single set - find it directly
+          const set = data.find(s => s.id === selectedSetId);
+          setCurrentSet(set);
+        } else {
+          // Multiple sets (grouped) - find all matching sets
+          const matchingSets = data.filter(s => setIds.includes(s.id));
+          if (matchingSets.length > 0) {
+            // Create a combined set object with the best name
+            // Sort by value/cards to find the "main" set for naming
+            const sortedSets = [...matchingSets].sort((a, b) => {
+              if ((a.total_value || 0) !== (b.total_value || 0)) {
+                return (b.total_value || 0) - (a.total_value || 0);
+              }
+              return (b.card_count || 0) - (a.card_count || 0);
+            });
+
+            // Filter out variant sets for naming
+            const mainSets = sortedSets.filter(s => {
+              const n = s.name.toLowerCase();
+              return !n.includes('pre-release') && !n.includes('tournament') && !n.includes('release event') && !n.includes('anniversary');
+            });
+
+            const primarySet = mainSets[0] || sortedSets[0];
+
+            // Check if this is the PROMO group
+            const isPromo = matchingSets.some(s =>
+              s.name.toLowerCase().includes('promo') ||
+              s.name.toLowerCase().includes('promotion') ||
+              s.set_code === 'P'
+            );
+
+            setCurrentSet({
+              ...primarySet,
+              name: isPromo ? 'Promotional Cards' : primarySet.name
+            });
+          }
+        }
       }
     }).catch(console.error);
   }, [selectedSetId]);
