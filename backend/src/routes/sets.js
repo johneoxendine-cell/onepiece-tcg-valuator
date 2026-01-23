@@ -193,11 +193,34 @@ router.get('/', (req, res) => {
     const top10Data = top10Stmt.all();
     const top10Map = Object.fromEntries(top10Data.map(v => [v.set_id, v.top10_value]));
 
+    // Get top card image for each set (fallback for sets without box art)
+    const topCardImageStmt = db.prepare(`
+      SELECT set_id, tcgplayer_id, image_url FROM (
+        SELECT c.set_id, c.tcgplayer_id, c.image_url, MAX(v.current_price) as max_price,
+          ROW_NUMBER() OVER (PARTITION BY c.set_id ORDER BY MAX(v.current_price) DESC) as rn
+        FROM cards c
+        JOIN variants v ON c.id = v.card_id
+        WHERE v.current_price IS NOT NULL
+          AND c.rarity != 'None'
+        GROUP BY c.set_id, c.id
+      ) WHERE rn = 1
+    `);
+    const topCardImageData = topCardImageStmt.all();
+    const topCardImageMap = Object.fromEntries(topCardImageData.map(row => [
+      row.set_id,
+      row.tcgplayer_id
+        ? `https://tcgplayer-cdn.tcgplayer.com/product/${row.tcgplayer_id}_200w.jpg`
+        : row.image_url
+    ]));
+
     // Add set codes, box images, valuation, and sort info
     const setsWithCodes = sets.map(set => {
       const set_code = getSetCode(set.name);
       const sortInfo = getSetSortInfo(set.name, set_code);
-      const image_url = getBoxImageUrl(set_code);
+      const boxImage = getBoxImageUrl(set_code);
+      const topCardImage = topCardImageMap[set.id];
+      // Use box image if available, otherwise fall back to top card image
+      const image_url = boxImage || topCardImage || null;
       const total_value = valuationMap[set.id] || 0;
       const top10_value = top10Map[set.id] || 0;
       const avg_top10_price = top10_value / 10;

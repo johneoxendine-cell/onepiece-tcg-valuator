@@ -11,9 +11,8 @@ function App() {
         <nav className="bg-gray-800 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-between h-14">
-              <NavLink to="/" className="flex items-center gap-2">
+              <NavLink to="/" className="flex items-center">
                 <span className="text-xl font-bold text-white">OP TCG</span>
-                <span className="text-orange-500 font-semibold">Valuator</span>
               </NavLink>
 
               <div className="flex items-center space-x-4">
