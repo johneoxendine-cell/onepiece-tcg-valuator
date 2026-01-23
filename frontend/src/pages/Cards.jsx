@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import CardCard from '../components/CardCard';
 import CardModal from '../components/CardModal';
@@ -160,8 +161,21 @@ function Cards() {
     setSelectedCard(null);
   };
 
+  const pageTitle = currentSet?.name
+    ? `${currentSet.name} - Card Prices | OP TCG Market`
+    : 'All Cards - One Piece TCG Prices | OP TCG Market';
+  const pageDescription = currentSet?.name
+    ? `View all ${currentSet.name} card prices and values. Track price changes and find the best deals in this One Piece TCG set.`
+    : 'Browse all One Piece TCG card prices. Sort by price, rarity, or percentage change to find the best deals.';
+
   return (
     <div className="space-y-6">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={`https://optcgmarket.com/cards${selectedSetId ? `?set_id=${selectedSetId}` : ''}`} />
+      </Helmet>
+
       {/* Back Link & Header */}
       <div>
         <Link

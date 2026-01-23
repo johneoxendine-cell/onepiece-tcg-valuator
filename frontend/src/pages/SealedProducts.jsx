@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import CardCard from '../components/CardCard';
 import CardModal from '../components/CardModal';
@@ -114,8 +115,21 @@ function SealedProducts() {
     setSelectedProduct(null);
   };
 
+  const pageTitle = currentSet?.name
+    ? `${currentSet.name} Booster Boxes & Sealed | OP TCG Market`
+    : 'Booster Boxes & Sealed Products | OP TCG Market';
+  const pageDescription = currentSet?.name
+    ? `Buy ${currentSet.name} booster boxes, packs, and sealed products. Track prices and find the best deals on One Piece TCG sealed products.`
+    : 'Browse One Piece TCG booster boxes, packs, and sealed products. Compare prices across all sets.';
+
   return (
     <div className="space-y-6">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href="https://optcgmarket.com/sealed" />
+      </Helmet>
+
       {/* Back Link & Header */}
       <div>
         <Link

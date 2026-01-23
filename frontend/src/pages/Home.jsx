@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import SetModal from '../components/SetModal';
 
@@ -212,6 +213,12 @@ function Home() {
 
   return (
     <div className="space-y-6">
+      <Helmet>
+        <title>OP TCG Market - One Piece Card Prices & Values</title>
+        <meta name="description" content="Browse all One Piece TCG sets and track card prices. Find undervalued cards and analyze market trends across every set." />
+        <link rel="canonical" href="https://optcgmarket.com/" />
+      </Helmet>
+
       {/* Header */}
       <div className="text-center py-4">
         <h1 className="text-3xl font-bold text-white">One Piece TCG Collection</h1>
