@@ -1,12 +1,16 @@
 [build]
 builder = "nixpacks"
 
+[build.env]
+NPM_CONFIG_PRODUCTION = "false"
+CI = "true"
+
 [build.commands]
-install = "npm install --prefix backend && npm install --prefix frontend --include=dev"
-build = "npm run build --prefix frontend"
+install = "cd backend && npm install && cd ../frontend && npm install"
+build = "cd frontend && npm run build"
 
 [deploy]
-startCommand = "npm start --prefix backend"
+startCommand = "cd backend && npm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
