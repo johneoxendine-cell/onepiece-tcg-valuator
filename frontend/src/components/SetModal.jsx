@@ -105,10 +105,12 @@ function SetModal({ set, onClose }) {
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     Top 10 Most Valuable Cards
                   </h3>
-                  <div className="space-y-1">
-                    {setDetails.valuation.top_cards.map((card, index) => (
-                      <TopCardRow key={card.id} card={card} rank={index + 1} formatPrice={formatPrice} formatChange={formatChange} />
-                    ))}
+                  <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                    <div className="space-y-1">
+                      {setDetails.valuation.top_cards.map((card, index) => (
+                        <TopCardRow key={card.id} card={card} rank={index + 1} formatPrice={formatPrice} formatChange={formatChange} />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
