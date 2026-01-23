@@ -59,8 +59,15 @@ router.get('/', (req, res) => {
 
     // Apply filters
     if (set_id) {
-      query += ` AND c.set_id = ?`;
-      params.push(set_id);
+      // Support multiple set_ids (comma-separated)
+      const setIds = set_id.split(',').map(id => id.trim()).filter(Boolean);
+      if (setIds.length === 1) {
+        query += ` AND c.set_id = ?`;
+        params.push(setIds[0]);
+      } else if (setIds.length > 1) {
+        query += ` AND c.set_id IN (${setIds.map(() => '?').join(',')})`;
+        params.push(...setIds);
+      }
     }
 
     if (rarity) {
@@ -160,8 +167,14 @@ router.get('/', (req, res) => {
     const countParams = [];
 
     if (set_id) {
-      countQuery += ` AND c.set_id = ?`;
-      countParams.push(set_id);
+      const setIds = set_id.split(',').map(id => id.trim()).filter(Boolean);
+      if (setIds.length === 1) {
+        countQuery += ` AND c.set_id = ?`;
+        countParams.push(setIds[0]);
+      } else if (setIds.length > 1) {
+        countQuery += ` AND c.set_id IN (${setIds.map(() => '?').join(',')})`;
+        countParams.push(...setIds);
+      }
     }
     if (rarity) {
       countQuery += ` AND c.rarity = ?`;

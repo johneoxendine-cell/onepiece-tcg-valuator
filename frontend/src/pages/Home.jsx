@@ -11,7 +11,7 @@ function Home() {
   const [sortBy, setSortBy] = useState('default');
 
   const sortOptions = [
-    { value: 'default', label: 'Default (By Type)' },
+    { value: 'default', label: 'Default (By Set Code)' },
     { value: 'total_value_desc', label: 'Total Set Value: High to Low' },
     { value: 'total_value_asc', label: 'Total Set Value: Low to High' },
     { value: 'top10_value_desc', label: 'Top 10 Value: High to Low' },
@@ -36,11 +36,99 @@ function Home() {
     fetchSets();
   }, []);
 
-  // Sort sets based on selected option
-  const sortedSets = useMemo(() => {
-    if (sortBy === 'default') return sets;
+  // Group sets by set_code and combine promos
+  const groupedSets = useMemo(() => {
+    const groups = new Map();
 
-    return [...sets].sort((a, b) => {
+    for (const set of sets) {
+      // Determine group key
+      let groupKey;
+      const name = set.name.toLowerCase();
+
+      // Check if it's a promo set
+      if (name.includes('promo') || name.includes('promotion') || set.set_code === 'P') {
+        groupKey = 'PROMO';
+      } else if (set.set_code) {
+        groupKey = set.set_code;
+      } else {
+        // Use the set's own id if no set_code
+        groupKey = set.id;
+      }
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          groupKey,
+          sets: [],
+          name: '',
+          image_url: null,
+          total_value: 0,
+          top10_value: 0,
+          card_count: 0,
+          release_date: null,
+        });
+      }
+
+      const group = groups.get(groupKey);
+      group.sets.push(set);
+      group.total_value += set.total_value || 0;
+      group.top10_value += set.top10_value || 0;
+      group.card_count += set.card_count || 0;
+
+      // Use the main set's name and image (not pre-release/tournament variants)
+      const isMainSet = !name.includes('pre-release') &&
+                        !name.includes('tournament') &&
+                        !name.includes('release event') &&
+                        !name.includes('anniversary');
+
+      if (isMainSet || !group.name) {
+        group.name = set.name;
+        group.image_url = set.image_url;
+        group.release_date = set.release_date;
+      }
+    }
+
+    // Convert to array and calculate avg_top10_price
+    const result = Array.from(groups.values()).map(group => ({
+      ...group,
+      avg_top10_price: group.top10_value / 10,
+      // For promo, use a special name
+      name: group.groupKey === 'PROMO' ? 'Promotional Cards' : group.name,
+      set_code: group.groupKey,
+      // Primary set id for linking (use the main set)
+      id: group.sets.find(s => {
+        const n = s.name.toLowerCase();
+        return !n.includes('pre-release') && !n.includes('tournament') && !n.includes('release event') && !n.includes('anniversary');
+      })?.id || group.sets[0].id,
+    }));
+
+    return result;
+  }, [sets]);
+
+  // Sort grouped sets
+  const sortedSets = useMemo(() => {
+    if (sortBy === 'default') {
+      // Sort by set code (OP-14, OP-13, etc.) descending, promos at end
+      return [...groupedSets].sort((a, b) => {
+        if (a.groupKey === 'PROMO') return 1;
+        if (b.groupKey === 'PROMO') return -1;
+
+        // Extract number from set code for proper sorting
+        const getNum = (code) => {
+          const match = code.match(/(\d+)/);
+          return match ? parseInt(match[1]) : 0;
+        };
+        const getPrefix = (code) => code.replace(/[\d-]/g, '');
+
+        // Sort by prefix first, then by number descending
+        const prefixA = getPrefix(a.groupKey);
+        const prefixB = getPrefix(b.groupKey);
+        if (prefixA !== prefixB) return prefixA.localeCompare(prefixB);
+
+        return getNum(b.groupKey) - getNum(a.groupKey);
+      });
+    }
+
+    return [...groupedSets].sort((a, b) => {
       switch (sortBy) {
         case 'total_value_desc':
           return (b.total_value || 0) - (a.total_value || 0);
@@ -58,10 +146,11 @@ function Home() {
           return 0;
       }
     });
-  }, [sets, sortBy]);
+  }, [groupedSets, sortBy]);
 
-  const handleSetClick = (set) => {
-    setSelectedSet(set);
+  const handleSetClick = (group) => {
+    // Pass the group with all its child sets
+    setSelectedSet(group);
   };
 
   const handleCloseModal = () => {
@@ -116,8 +205,8 @@ function Home() {
 
       {/* Sets Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {sortedSets.map((set) => (
-          <SetCard key={set.id} set={set} onSetClick={handleSetClick} />
+        {sortedSets.map((group) => (
+          <SetCard key={group.groupKey} group={group} onSetClick={handleSetClick} />
         ))}
       </div>
 
@@ -136,22 +225,24 @@ function Home() {
   );
 }
 
-function SetCard({ set, onSetClick }) {
+function SetCard({ group, onSetClick }) {
   const [imageError, setImageError] = useState(false);
-  const { id, name, image_url, set_code } = set;
+  const { name, image_url, set_code, sets, total_value, card_count } = group;
 
-  // Use set_code from API, or extract from name as fallback
-  const displayCode = set_code || (() => {
-    const codeMatch = name.match(/\b(OP|ST|EB|PRB)[-]?\d+\b/i);
-    return codeMatch ? codeMatch[0].toUpperCase() : name.slice(0, 4).toUpperCase();
-  })();
+  const formatValue = (value) => {
+    if (!value) return '$0';
+    return `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  // Build comma-separated set IDs for the link
+  const setIdsParam = sets.map(s => s.id).join(',');
 
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-gray-600 transition-colors">
       {/* Set Image Area - Clickable for set details */}
       <div
         className="aspect-[63/88] bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden relative cursor-pointer"
-        onClick={() => onSetClick(set)}
+        onClick={() => onSetClick(group)}
       >
         {image_url && !imageError ? (
           <img
@@ -162,12 +253,24 @@ function SetCard({ set, onSetClick }) {
             onError={() => setImageError(true)}
           />
         ) : (
-          <span className="text-2xl font-bold text-gray-400">{displayCode}</span>
+          <span className="text-2xl font-bold text-gray-400">{set_code}</span>
         )}
         {/* Set Code Badge */}
-        {displayCode && (
+        {set_code && (
           <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/70 text-white text-xs font-bold rounded">
-            {displayCode}
+            {set_code}
+          </span>
+        )}
+        {/* Card count badge */}
+        {card_count > 0 && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500/90 text-white text-xs font-bold rounded">
+            {card_count} cards
+          </span>
+        )}
+        {/* Total Value Badge */}
+        {total_value > 0 && (
+          <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-green-600/90 text-white text-xs font-bold rounded">
+            {formatValue(total_value)}
           </span>
         )}
         {/* Click hint overlay */}
@@ -185,7 +288,7 @@ function SetCard({ set, onSetClick }) {
         </h3>
 
         <Link
-          to={`/cards?set_id=${id}`}
+          to={`/cards?set_id=${setIdsParam}`}
           className="mt-3 block w-full text-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-sm font-medium transition-colors"
         >
           View Collection
