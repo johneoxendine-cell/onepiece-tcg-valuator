@@ -407,7 +407,7 @@ export function getSetValuationSummary(setId) {
 
   const summary = summaryStmt.get(UNDERVALUED_THRESHOLD, OVERVALUED_THRESHOLD, setId);
 
-  // Get top 10 most valuable cards (exclude sealed products)
+  // Get top 10 most valuable cards (exclude sealed products, one per card showing highest priced variant)
   const topCardsStmt = db.prepare(`
     SELECT
       c.id, c.name, c.rarity, c.number, c.image_url, c.tcgplayer_id,
@@ -417,6 +417,13 @@ export function getSetValuationSummary(setId) {
     WHERE c.set_id = ?
       AND v.current_price IS NOT NULL
       AND c.rarity != 'None'
+      AND v.id = (
+        SELECT v2.id
+        FROM variants v2
+        WHERE v2.card_id = c.id AND v2.current_price IS NOT NULL
+        ORDER BY v2.current_price DESC
+        LIMIT 1
+      )
     ORDER BY v.current_price DESC
     LIMIT 10
   `);

@@ -177,15 +177,16 @@ router.get('/', (req, res) => {
     const valuationData = valuationStmt.all();
     const valuationMap = Object.fromEntries(valuationData.map(v => [v.set_id, v.total_value]));
 
-    // Get top 10 value for each set
+    // Get top 10 value for each set (one entry per card, using highest priced variant)
     const top10Stmt = db.prepare(`
-      SELECT set_id, SUM(current_price) as top10_value FROM (
-        SELECT c.set_id, v.current_price,
-          ROW_NUMBER() OVER (PARTITION BY c.set_id ORDER BY v.current_price DESC) as rn
+      SELECT set_id, SUM(max_price) as top10_value FROM (
+        SELECT c.set_id, c.id as card_id, MAX(v.current_price) as max_price,
+          ROW_NUMBER() OVER (PARTITION BY c.set_id ORDER BY MAX(v.current_price) DESC) as rn
         FROM cards c
         JOIN variants v ON c.id = v.card_id
         WHERE v.current_price IS NOT NULL
           AND c.rarity != 'None'
+        GROUP BY c.set_id, c.id
       ) WHERE rn <= 10
       GROUP BY set_id
     `);
