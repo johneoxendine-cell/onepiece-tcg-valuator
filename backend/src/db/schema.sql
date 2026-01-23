@@ -23,17 +23,6 @@ CREATE TABLE IF NOT EXISTS cards (
   number TEXT,
   tcgplayer_id INTEGER,
   image_url TEXT,
-  -- OPTCG gameplay data
-  card_text TEXT,
-  card_type TEXT,
-  card_color TEXT,
-  card_cost INTEGER,
-  card_power INTEGER,
-  life INTEGER,
-  counter_amount INTEGER,
-  attribute TEXT,
-  sub_types TEXT,
-  optcg_image_url TEXT,
   FOREIGN KEY (set_id) REFERENCES sets(id)
 );
 
@@ -50,6 +39,11 @@ CREATE TABLE IF NOT EXISTS variants (
   change_24h REAL,
   change_7d REAL,
   change_30d REAL,
+  change_90d REAL,
+  -- Trend slope (linear regression) - positive = rising, negative = falling
+  trend_slope_7d REAL,
+  trend_slope_30d REAL,
+  trend_slope_90d REAL,
   last_updated INTEGER,
   FOREIGN KEY (card_id) REFERENCES cards(id)
 );

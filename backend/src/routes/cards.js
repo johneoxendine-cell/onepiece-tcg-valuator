@@ -35,11 +35,11 @@ router.get('/', (req, res) => {
       SELECT
         c.id, c.name, c.rarity, c.number, c.image_url, c.tcgplayer_id,
         c.set_id, s.name as set_name,
-        c.card_text, c.card_type, c.card_color, c.card_cost, c.card_power,
-        c.life, c.counter_amount, c.attribute, c.sub_types, c.optcg_image_url,
         v.id as variant_id, v.condition, v.printing,
         v.current_price, v.avg_7d, v.avg_30d, v.avg_90d,
-        v.change_24h, v.change_7d, v.change_30d, v.last_updated
+        v.change_24h, v.change_7d, v.change_30d, v.change_90d,
+        v.trend_slope_7d, v.trend_slope_30d, v.trend_slope_90d,
+        v.last_updated
       FROM cards c
       JOIN sets s ON c.set_id = s.id
       LEFT JOIN variants v ON c.id = v.card_id
@@ -47,11 +47,10 @@ router.get('/', (req, res) => {
         AND (v.id IS NULL OR v.id = (
           SELECT v2.id
           FROM variants v2
-          WHERE v2.card_id = c.id
+          WHERE v2.card_id = c.id AND v2.current_price IS NOT NULL
           ORDER BY
-            CASE WHEN v2.avg_30d IS NOT NULL THEN 0 ELSE 1 END,
-            CASE WHEN v2.current_price IS NOT NULL THEN 0 ELSE 1 END,
-            v2.last_updated DESC
+            CASE WHEN v2.condition = 'Near Mint' THEN 0 ELSE 1 END,
+            v2.current_price DESC
           LIMIT 1
         ))
     `;

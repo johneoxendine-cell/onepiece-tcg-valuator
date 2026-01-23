@@ -172,11 +172,33 @@ export async function initializeDatabase() {
   // Insert One Piece game if not exists
   database.run(`INSERT OR IGNORE INTO games (id, name) VALUES ('one-piece', 'One Piece Card Game')`);
 
+  // Run migrations for any missing columns
+  runMigrations(database);
+
   saveDb();
   startAutoSave();
 
   console.log('Database initialized successfully');
   return dbWrapper;
+}
+
+// Add any missing columns to existing tables
+function runMigrations(database) {
+  // Variants table - trend slope and change_90d columns
+  const variantColumns = [
+    'trend_slope_7d REAL',
+    'trend_slope_30d REAL',
+    'trend_slope_90d REAL',
+    'change_90d REAL'
+  ];
+
+  for (const col of variantColumns) {
+    try {
+      database.run(`ALTER TABLE variants ADD COLUMN ${col}`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
+  }
 }
 
 export function getDatabase() {

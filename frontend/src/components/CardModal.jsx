@@ -25,35 +25,13 @@ function CardModal({ card, onClose }) {
 
   if (!card) return null;
 
-  const formatPrice = (price) => {
-    if (price === null || price === undefined) return 'N/A';
-    return `$${price.toFixed(2)}`;
-  };
-
-  // Color badge styles
-  const colorStyles = {
-    'Red': 'bg-red-600',
-    'Blue': 'bg-blue-600',
-    'Green': 'bg-green-600',
-    'Purple': 'bg-purple-600',
-    'Black': 'bg-gray-800 border border-gray-600',
-    'Yellow': 'bg-yellow-500 text-black',
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {cardDetails?.card_color && (
-                <span className={`px-2 py-0.5 text-xs font-bold rounded text-white ${colorStyles[cardDetails.card_color] || 'bg-gray-600'}`}>
-                  {cardDetails.card_color}
-                </span>
-              )}
-              <h2 className="text-lg font-bold text-white">{card.name}</h2>
-            </div>
+            <h2 className="text-lg font-bold text-white">{card.name}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-white transition-colors"
@@ -63,11 +41,8 @@ function CardModal({ card, onClose }) {
               </svg>
             </button>
           </div>
-          {cardDetails?.card_type && (
-            <div className="text-sm text-gray-400 mt-1">
-              {cardDetails.card_type}
-              {cardDetails.sub_types && ` - ${cardDetails.sub_types}`}
-            </div>
+          {card.rarity && card.rarity !== 'None' && (
+            <div className="text-sm text-gray-400 mt-1">{card.rarity}</div>
           )}
         </div>
 
@@ -77,52 +52,6 @@ function CardModal({ card, onClose }) {
             <div className="text-center py-8 text-gray-400">Loading...</div>
           ) : (
             <div className="space-y-4">
-              {/* Card Stats */}
-              {(cardDetails?.card_cost !== null || cardDetails?.card_power !== null || cardDetails?.life !== null || cardDetails?.counter_amount !== null) && (
-                <div className="grid grid-cols-4 gap-2">
-                  {cardDetails?.card_cost !== null && (
-                    <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-400">Cost</div>
-                      <div className="text-lg font-bold text-white">{cardDetails.card_cost}</div>
-                    </div>
-                  )}
-                  {cardDetails?.card_power !== null && (
-                    <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-400">Power</div>
-                      <div className="text-lg font-bold text-white">{cardDetails.card_power}</div>
-                    </div>
-                  )}
-                  {cardDetails?.life !== null && (
-                    <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-400">Life</div>
-                      <div className="text-lg font-bold text-white">{cardDetails.life}</div>
-                    </div>
-                  )}
-                  {cardDetails?.counter_amount !== null && cardDetails?.counter_amount > 0 && (
-                    <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-400">Counter</div>
-                      <div className="text-lg font-bold text-white">+{cardDetails.counter_amount}</div>
-                    </div>
-                  )}
-                  {cardDetails?.attribute && (
-                    <div className="bg-gray-700/50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-gray-400">Attribute</div>
-                      <div className="text-sm font-bold text-white">{cardDetails.attribute}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Card Text */}
-              {cardDetails?.card_text && (
-                <div className="bg-gray-700/30 rounded-lg p-3">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    Card Effect
-                  </h3>
-                  <p className="text-sm text-gray-200 whitespace-pre-wrap">{cardDetails.card_text}</p>
-                </div>
-              )}
-
               {/* Variants/Pricing */}
               {cardDetails?.variants?.length > 0 && (
                 <>
@@ -137,9 +66,9 @@ function CardModal({ card, onClose }) {
                 </>
               )}
 
-              {!cardDetails?.variants?.length && !cardDetails?.card_text && (
+              {!cardDetails?.variants?.length && (
                 <div className="text-center py-8 text-gray-400">
-                  No data available
+                  No pricing data available
                 </div>
               )}
             </div>
@@ -150,8 +79,58 @@ function CardModal({ card, onClose }) {
   );
 }
 
+function TrendIndicator({ slope, period = '30d' }) {
+  if (slope === null || slope === undefined) return null;
+
+  const absSlope = Math.abs(slope);
+  let strength = 'neutral';
+  let color = 'text-gray-400';
+  let bgColor = 'bg-gray-700/50';
+
+  if (slope > 0.01) {
+    strength = 'up';
+    color = 'text-green-400';
+    bgColor = 'bg-green-900/30';
+  } else if (slope < -0.01) {
+    strength = 'down';
+    color = 'text-red-400';
+    bgColor = 'bg-red-900/30';
+  }
+
+  const isStrong = absSlope > 0.05;
+
+  return (
+    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${bgColor} ${color}`} title={`${period} trend: ${slope > 0 ? '+' : ''}${slope.toFixed(3)}/day`}>
+      {strength === 'up' && (
+        <>
+          <svg className={`w-3 h-3 ${isStrong ? 'animate-pulse' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>{isStrong ? 'Rising' : 'Up'}</span>
+        </>
+      )}
+      {strength === 'down' && (
+        <>
+          <svg className={`w-3 h-3 ${isStrong ? 'animate-pulse' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>{isStrong ? 'Falling' : 'Down'}</span>
+        </>
+      )}
+      {strength === 'neutral' && (
+        <>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+          <span>Stable</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 function VariantRow({ variant }) {
-  const { condition, printing, current_price, change_7d } = variant;
+  const { condition, printing, current_price, change_7d, change_30d, change_90d, trend_slope_30d } = variant;
 
   const formatPrice = (price) => {
     if (price === null || price === undefined) return 'N/A';
@@ -176,13 +155,28 @@ function VariantRow({ variant }) {
         </div>
       </div>
 
-      <div className="text-right">
-        <div className="text-yellow-500 font-bold">{formatPrice(current_price)}</div>
-        {change_7d !== null && change_7d !== undefined && (
-          <div className={`text-xs ${change_7d > 0 ? 'text-green-400' : change_7d < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-            {formatChange(change_7d)}
+      <div className="flex items-center gap-3">
+        <TrendIndicator slope={trend_slope_30d} period="30d" />
+        <div className="text-right">
+          <div className="text-yellow-500 font-bold">{formatPrice(current_price)}</div>
+          <div className="flex gap-2 text-xs">
+            {change_7d !== null && change_7d !== undefined && (
+              <span className={change_7d > 0 ? 'text-green-400' : change_7d < 0 ? 'text-red-400' : 'text-gray-400'}>
+                7d: {formatChange(change_7d)}
+              </span>
+            )}
+            {change_30d !== null && change_30d !== undefined && (
+              <span className={change_30d > 0 ? 'text-green-400' : change_30d < 0 ? 'text-red-400' : 'text-gray-400'}>
+                30d: {formatChange(change_30d)}
+              </span>
+            )}
+            {change_90d !== null && change_90d !== undefined && (
+              <span className={change_90d > 0 ? 'text-green-400' : change_90d < 0 ? 'text-red-400' : 'text-gray-400'}>
+                90d: {formatChange(change_90d)}
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
