@@ -74,33 +74,41 @@ function Home() {
       group.total_value += set.total_value || 0;
       group.top10_value += set.top10_value || 0;
       group.card_count += set.card_count || 0;
-
-      // Use the main set's name and image (not pre-release/tournament variants)
-      const isMainSet = !name.includes('pre-release') &&
-                        !name.includes('tournament') &&
-                        !name.includes('release event') &&
-                        !name.includes('anniversary');
-
-      if (isMainSet || !group.name) {
-        group.name = set.name;
-        group.image_url = set.image_url;
-        group.release_date = set.release_date;
-      }
     }
 
     // Convert to array and calculate avg_top10_price
-    const result = Array.from(groups.values()).map(group => ({
-      ...group,
-      avg_top10_price: group.top10_value / 10,
-      // For promo, use a special name
-      name: group.groupKey === 'PROMO' ? 'Promotional Cards' : group.name,
-      set_code: group.groupKey,
-      // Primary set id for linking (use the main set)
-      id: group.sets.find(s => {
+    const result = Array.from(groups.values()).map(group => {
+      // Find the best set to use as primary (prefer sets with actual price data)
+      const sortedSets = [...group.sets].sort((a, b) => {
+        // Prefer sets with total_value > 0
+        if ((a.total_value || 0) !== (b.total_value || 0)) {
+          return (b.total_value || 0) - (a.total_value || 0);
+        }
+        // Then prefer sets with more cards
+        return (b.card_count || 0) - (a.card_count || 0);
+      });
+
+      // Filter to main sets (not pre-release/tournament variants)
+      const mainSets = sortedSets.filter(s => {
         const n = s.name.toLowerCase();
         return !n.includes('pre-release') && !n.includes('tournament') && !n.includes('release event') && !n.includes('anniversary');
-      })?.id || group.sets[0].id,
-    }));
+      });
+
+      // Use the best main set, or fall back to best overall set
+      const primarySet = mainSets[0] || sortedSets[0];
+
+      return {
+        ...group,
+        avg_top10_price: group.top10_value / 10,
+        // For promo, use a special name
+        name: group.groupKey === 'PROMO' ? 'Promotional Cards' : primarySet.name,
+        set_code: group.groupKey,
+        image_url: primarySet.image_url || group.image_url,
+        release_date: primarySet.release_date || group.release_date,
+        // Primary set id for linking (use the set with most data)
+        id: primarySet.id,
+      };
+    });
 
     return result;
   }, [sets]);
