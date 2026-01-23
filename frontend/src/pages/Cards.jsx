@@ -20,7 +20,11 @@ function Cards() {
   const page = parseInt(searchParams.get('page') || '1', 10);
   const sort = searchParams.get('sort') || 'price';
   const order = searchParams.get('order') || 'desc';
+  const search = searchParams.get('search') || '';
   const limit = 48;
+
+  // Local state for search input (to allow typing without immediate URL updates)
+  const [searchInput, setSearchInput] = useState(search);
 
   // Sort options for dropdown
   const sortOptions = [
@@ -61,6 +65,17 @@ function Cards() {
     }).catch(console.error);
   }, [selectedSetId]);
 
+  // Debounce search input - update URL after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== search) {
+        updateFilters({ search: searchInput || null });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Fetch cards when filters change
   useEffect(() => {
     async function fetchCards() {
@@ -77,6 +92,7 @@ function Cards() {
         };
 
         if (selectedSetId) params.set_id = selectedSetId;
+        if (search) params.search = search;
 
         const data = await api.getCards(params);
         setCards(data.cards || []);
@@ -89,7 +105,7 @@ function Cards() {
     }
 
     fetchCards();
-  }, [selectedSetId, page, sort, order]);
+  }, [selectedSetId, page, sort, order, search]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -123,7 +139,21 @@ function Cards() {
       </div>
 
       {/* Filters Row */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-end gap-4">
+        {/* Search Input */}
+        <div className="flex-1 min-w-[200px] max-w-[300px]">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Search Cards
+          </label>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by card name..."
+            className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+        </div>
+
         {/* Set Selector (if no set selected) */}
         {!selectedSetId && sets.length > 0 && (
           <div className="flex-1 min-w-[200px]">
@@ -197,7 +227,9 @@ function Cards() {
       {/* Empty State */}
       {!loading && !error && cards.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          No cards found in this set.
+          {search
+            ? `No cards found matching "${search}"`
+            : 'No cards found in this set.'}
         </div>
       )}
 
