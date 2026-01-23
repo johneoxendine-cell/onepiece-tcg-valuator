@@ -126,6 +126,9 @@ router.get('/', (req, res) => {
       rarity: rarityRank,
       deviation: '((v.current_price - v.avg_30d) / v.avg_30d * 100)',
       change: 'v.change_7d',
+      change_7d: 'v.change_7d',
+      change_30d: 'v.change_30d',
+      change_90d: 'v.change_90d',
       // Sort by card number: extract numeric part after the dash (e.g., "ST22-001" -> 001)
       number: "CAST(SUBSTR(c.number, INSTR(c.number, '-') + 1) AS INTEGER)"
     };
@@ -138,6 +141,9 @@ router.get('/', (req, res) => {
       query += ` ORDER BY CASE WHEN c.number = 'N/A' OR c.number IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
     } else if (sort === 'price') {
       query += ` ORDER BY CASE WHEN v.current_price IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
+    } else if (sort === 'change_7d' || sort === 'change_30d' || sort === 'change_90d') {
+      // Put nulls last for percentage change sorts
+      query += ` ORDER BY CASE WHEN ${sortColumn} IS NULL THEN 1 ELSE 0 END, ${sortColumn} ${sortOrder}`;
     } else {
       query += ` ORDER BY ${sortColumn} ${sortOrder}`;
     }

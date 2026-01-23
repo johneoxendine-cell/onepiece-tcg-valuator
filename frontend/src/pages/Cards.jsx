@@ -30,6 +30,12 @@ function Cards() {
   const sortOptions = [
     { value: 'price-desc', label: 'Price: High to Low' },
     { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'change_7d-desc', label: '7D Change: Biggest Gainers' },
+    { value: 'change_7d-asc', label: '7D Change: Biggest Decliners' },
+    { value: 'change_30d-desc', label: '30D Change: Biggest Gainers' },
+    { value: 'change_30d-asc', label: '30D Change: Biggest Decliners' },
+    { value: 'change_90d-desc', label: '90D Change: Biggest Gainers' },
+    { value: 'change_90d-asc', label: '90D Change: Biggest Decliners' },
     { value: 'rarity-desc', label: 'Rarity: Highest First' },
     { value: 'rarity-asc', label: 'Rarity: Lowest First' },
     { value: 'name-asc', label: 'Name: A to Z' },
