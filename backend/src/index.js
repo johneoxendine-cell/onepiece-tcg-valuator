@@ -2,8 +2,13 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { initializeDatabase } from './config/database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import cardsRouter from './routes/cards.js';
 import setsRouter from './routes/sets.js';
 import valuationRouter from './routes/valuation.js';
@@ -69,6 +74,20 @@ app.post('/api/sync/continue', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendPath));
+
+  // SPA fallback - serve index.html for non-API routes
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,4 +1,8 @@
 node_modules/
 .env
+.env.local
 *.db
+data/
 .DS_Store
+frontend/dist/
+*.log
