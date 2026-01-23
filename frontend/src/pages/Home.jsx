@@ -9,6 +9,7 @@ function Home() {
   const [error, setError] = useState(null);
   const [selectedSet, setSelectedSet] = useState(null);
   const [sortBy, setSortBy] = useState('default');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sortOptions = [
     { value: 'default', label: 'Default (By Set Code)' },
@@ -148,6 +149,34 @@ function Home() {
     });
   }, [groupedSets, sortBy]);
 
+  // Filter sets based on search query
+  const filteredSets = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return sortedSets;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return sortedSets.filter((group) => {
+      // Match against set name
+      if (group.name.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Match against set code (e.g., "OP-01", "op01", "op 01")
+      if (group.set_code && group.set_code.toLowerCase().includes(query)) {
+        return true;
+      }
+      // Also match without the dash (e.g., "op01" matches "OP-01")
+      if (group.set_code) {
+        const codeNoDash = group.set_code.toLowerCase().replace('-', '');
+        const queryNoDash = query.replace(/[-\s]/g, '');
+        if (codeNoDash.includes(queryNoDash)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [sortedSets, searchQuery]);
+
   const handleSetClick = (group) => {
     // Pass the group with all its child sets
     setSelectedSet(group);
@@ -183,8 +212,23 @@ function Home() {
         </p>
       </div>
 
-      {/* Sort Dropdown */}
-      <div className="flex justify-end">
+      {/* Search and Sort Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-end">
+        {/* Search Input */}
+        <div className="w-full sm:w-64">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Search Sets
+          </label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name or set code..."
+            className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Sort Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
             Sort By
@@ -205,10 +249,17 @@ function Home() {
 
       {/* Sets Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {sortedSets.map((group) => (
+        {filteredSets.map((group) => (
           <SetCard key={group.groupKey} group={group} onSetClick={handleSetClick} />
         ))}
       </div>
+
+      {/* No Results Message */}
+      {searchQuery && filteredSets.length === 0 && sets.length > 0 && (
+        <div className="text-center py-8 text-gray-400">
+          No sets found matching "{searchQuery}"
+        </div>
+      )}
 
       {/* Empty State */}
       {sets.length === 0 && (
