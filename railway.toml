@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [build.commands]
-install = "npm install --prefix backend && npm install --prefix frontend"
+install = "npm install --prefix backend && npm install --prefix frontend --include=dev"
 build = "npm run build --prefix frontend"
 
 [deploy]
