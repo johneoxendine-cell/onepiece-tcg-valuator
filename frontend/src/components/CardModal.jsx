@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { getTcgPlayerAffiliateLink } from '../utils/affiliate';
 
 function CardModal({ card, onClose }) {
   const [cardDetails, setCardDetails] = useState(null);
@@ -41,9 +42,25 @@ function CardModal({ card, onClose }) {
               </svg>
             </button>
           </div>
-          {card.rarity && card.rarity !== 'None' && (
-            <div className="text-sm text-gray-400 mt-1">{card.rarity}</div>
-          )}
+          <div className="flex items-center justify-between mt-2">
+            {card.rarity && card.rarity !== 'None' && (
+              <div className="text-sm text-gray-400">{card.rarity}</div>
+            )}
+            {card.tcgplayer_id && (
+              <a
+                href={getTcgPlayerAffiliateLink(card.tcgplayer_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Buy on TCGPlayer
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Content */}

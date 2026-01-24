@@ -1,3 +1,5 @@
+import { getTcgPlayerAffiliateLink } from '../utils/affiliate';
+
 function TrendBadge({ slope }) {
   if (slope === null || slope === undefined) return null;
 
@@ -41,7 +43,7 @@ function ChangeIndicator({ value, label }) {
 }
 
 function CardCard({ card, onClick }) {
-  const { name, rarity, image_url, current_price, change_7d, change_30d, change_90d, trend_slope_30d } = card;
+  const { name, rarity, image_url, current_price, change_7d, change_30d, change_90d, trend_slope_30d, tcgplayer_id } = card;
 
   const formatPrice = (price) => {
     if (price === null || price === undefined) return null;
@@ -97,6 +99,22 @@ function CardCard({ card, onClick }) {
               {rarity}
             </span>
           </div>
+        )}
+
+        {/* Buy Button */}
+        {tcgplayer_id && (
+          <a
+            href={getTcgPlayerAffiliateLink(tcgplayer_id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Buy on TCGPlayer
+          </a>
         )}
       </div>
     </div>
