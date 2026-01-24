@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS variants (
   condition TEXT,
   printing TEXT,
   current_price REAL,
+  low_price REAL,
   avg_7d REAL,
   avg_30d REAL,
   avg_90d REAL,

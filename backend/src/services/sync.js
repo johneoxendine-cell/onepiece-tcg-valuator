@@ -90,10 +90,10 @@ export async function syncSetCards(setId) {
 
     const insertVariant = db.prepare(`
       INSERT OR REPLACE INTO variants (
-        id, card_id, condition, printing, current_price,
+        id, card_id, condition, printing, current_price, low_price,
         avg_7d, avg_30d, avg_90d, change_24h, change_7d, change_30d, change_90d,
         trend_slope_7d, trend_slope_30d, trend_slope_90d, last_updated
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     // Log first card structure to see available fields
@@ -136,6 +136,7 @@ export async function syncSetCards(setId) {
             variant.condition || 'Near Mint',
             variant.printing || 'Standard',
             variant.price || variant.market_price || variant.marketPrice || null,
+            variant.low_price || variant.lowPrice || variant.lowestPrice || variant.lowest_price || variant.directLowPrice || null,
             variant.avg_7d || variant.avg7d || variant.avg_7_day || variant.avg7Day || variant.avgPrice || variant.avgPrice7d || null,
             variant.avg_30d || variant.avg30d || variant.avg_30_day || variant.avg30Day || variant.avgPrice30d || null,
             variant.avg_90d || variant.avg90d || variant.avg_90_day || variant.avg90Day || variant.avgPrice90d || null,
@@ -179,10 +180,10 @@ export async function syncCardPrices(cardIds) {
   ensureVariantColumns(db);
   const insertVariant = db.prepare(`
     INSERT OR REPLACE INTO variants (
-      id, card_id, condition, printing, current_price,
+      id, card_id, condition, printing, current_price, low_price,
       avg_7d, avg_30d, avg_90d, change_24h, change_7d, change_30d, change_90d,
       trend_slope_7d, trend_slope_30d, trend_slope_90d, last_updated
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertPriceHistory = db.prepare(`
@@ -212,6 +213,7 @@ export async function syncCardPrices(cardIds) {
               variant.condition || 'Near Mint',
               variant.printing || 'Standard',
               variant.price || variant.market_price || variant.marketPrice || null,
+              variant.low_price || variant.lowPrice || variant.lowestPrice || variant.lowest_price || variant.directLowPrice || null,
               variant.avg_7d || variant.avg7d || variant.avg_7_day || variant.avg7Day || variant.avgPrice || variant.avgPrice7d || null,
               variant.avg_30d || variant.avg30d || variant.avg_30_day || variant.avg30Day || variant.avgPrice30d || null,
               variant.avg_90d || variant.avg90d || variant.avg_90_day || variant.avg90Day || variant.avgPrice90d || null,

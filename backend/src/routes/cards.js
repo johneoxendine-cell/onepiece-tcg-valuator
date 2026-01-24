@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
         c.id, c.name, c.rarity, c.number, c.image_url, c.tcgplayer_id,
         c.set_id, s.name as set_name,
         v.id as variant_id, v.condition, v.printing,
-        v.current_price, v.avg_7d, v.avg_30d, v.avg_90d,
+        v.current_price, v.low_price, v.avg_7d, v.avg_30d, v.avg_90d,
         v.change_24h, v.change_7d, v.change_30d, v.change_90d,
         v.trend_slope_7d, v.trend_slope_30d, v.trend_slope_90d,
         v.last_updated

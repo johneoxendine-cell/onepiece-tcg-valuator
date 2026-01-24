@@ -184,12 +184,13 @@ export async function initializeDatabase() {
 
 // Add any missing columns to existing tables
 function runMigrations(database) {
-  // Variants table - trend slope and change_90d columns
+  // Variants table - trend slope, change_90d, and low_price columns
   const variantColumns = [
     'trend_slope_7d REAL',
     'trend_slope_30d REAL',
     'trend_slope_90d REAL',
-    'change_90d REAL'
+    'change_90d REAL',
+    'low_price REAL'
   ];
 
   for (const col of variantColumns) {

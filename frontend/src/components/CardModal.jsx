@@ -146,8 +146,8 @@ function TrendIndicator({ slope, period = '30d' }) {
   );
 }
 
-function VariantRow({ variant }) {
-  const { condition, printing, current_price, change_7d, change_30d, change_90d, trend_slope_30d } = variant;
+function VariantRow({ variant, tcgplayerId }) {
+  const { condition, printing, current_price, low_price, change_7d, change_30d, change_90d, trend_slope_30d } = variant;
 
   const formatPrice = (price) => {
     if (price === null || price === undefined) return 'N/A';
@@ -175,8 +175,19 @@ function VariantRow({ variant }) {
       <div className="flex items-center gap-3">
         <TrendIndicator slope={trend_slope_30d} period="30d" />
         <div className="text-right">
-          <div className="text-yellow-500 font-bold">{formatPrice(current_price)}</div>
-          <div className="flex gap-2 text-xs">
+          <div className="flex gap-3 items-center justify-end">
+            <div>
+              <div className="text-xs text-gray-500">Market</div>
+              <div className="text-yellow-500 font-bold">{formatPrice(current_price)}</div>
+            </div>
+            {low_price && (
+              <div>
+                <div className="text-xs text-gray-500">Buy Now</div>
+                <div className="text-green-400 font-bold">{formatPrice(low_price)}</div>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2 text-xs mt-1">
             {change_7d !== null && change_7d !== undefined && (
               <span className={change_7d > 0 ? 'text-green-400' : change_7d < 0 ? 'text-red-400' : 'text-gray-400'}>
                 7d: {formatChange(change_7d)}
