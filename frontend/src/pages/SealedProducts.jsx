@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import CardCard from '../components/CardCard';
 import CardModal from '../components/CardModal';
+import { BreadcrumbSchema } from '../components/SEO';
 
 function SealedProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -129,6 +130,10 @@ function SealedProducts() {
         <meta name="description" content={pageDescription} />
         <link rel="canonical" href="https://optcgmarket.com/sealed" />
       </Helmet>
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: 'https://optcgmarket.com/' },
+        { name: 'Booster Boxes & Sealed', url: 'https://optcgmarket.com/sealed' }
+      ]} />
 
       {/* Back Link & Header */}
       <div>

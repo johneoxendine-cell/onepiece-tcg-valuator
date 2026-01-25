@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import CardCard from '../components/CardCard';
 import CardModal from '../components/CardModal';
+import { BreadcrumbSchema } from '../components/SEO';
 
 function Cards() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -175,6 +176,18 @@ function Cards() {
         <meta name="description" content={pageDescription} />
         <link rel="canonical" href={`https://optcgmarket.com/cards${selectedSetId ? `?set_id=${selectedSetId}` : ''}`} />
       </Helmet>
+      <BreadcrumbSchema items={
+        currentSet?.name
+          ? [
+              { name: 'Home', url: 'https://optcgmarket.com/' },
+              { name: 'Cards', url: 'https://optcgmarket.com/cards' },
+              { name: currentSet.name, url: `https://optcgmarket.com/cards?set_id=${selectedSetId}` }
+            ]
+          : [
+              { name: 'Home', url: 'https://optcgmarket.com/' },
+              { name: 'All Cards', url: 'https://optcgmarket.com/cards' }
+            ]
+      } />
 
       {/* Back Link & Header */}
       <div>

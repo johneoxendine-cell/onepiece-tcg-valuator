@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import api from '../services/api';
 import SetModal from '../components/SetModal';
+import { BreadcrumbSchema } from '../components/SEO';
 
 function Home() {
   const [sets, setSets] = useState([]);
@@ -218,6 +219,9 @@ function Home() {
         <meta name="description" content="Browse all One Piece TCG sets and track card prices. Find undervalued cards and analyze market trends across every set." />
         <link rel="canonical" href="https://optcgmarket.com/" />
       </Helmet>
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: 'https://optcgmarket.com/' }
+      ]} />
 
       {/* Header */}
       <div className="text-center py-4">
