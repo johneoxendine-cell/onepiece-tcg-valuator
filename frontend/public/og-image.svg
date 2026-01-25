@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#111827"/>
+
+  <!-- Decorative gradient overlay -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#111827;stop-opacity:0" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#111827;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad1)"/>
+  <rect width="1200" height="630" fill="url(#grad2)"/>
+
+  <!-- Logo circle -->
+  <circle cx="600" cy="220" r="90" fill="#f97316"/>
+  <text x="600" y="250" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white" text-anchor="middle">OP</text>
+
+  <!-- Site name -->
+  <text x="600" y="380" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">OP TCG Market</text>
+
+  <!-- Tagline -->
+  <text x="600" y="450" font-family="Arial, sans-serif" font-size="32" fill="#9ca3af" text-anchor="middle">One Piece TCG Card Prices &amp; Market Trends</text>
+
+  <!-- Bottom accent line -->
+  <rect x="400" y="500" width="400" height="4" rx="2" fill="#f97316"/>
+
+  <!-- Decorative card icons -->
+  <g opacity="0.1">
+    <!-- Left card stack -->
+    <rect x="50" y="150" width="120" height="168" rx="8" fill="#f97316" transform="rotate(-15 110 234)"/>
+    <rect x="70" y="140" width="120" height="168" rx="8" fill="#f97316" transform="rotate(-8 130 224)"/>
+    <rect x="90" y="130" width="120" height="168" rx="8" fill="#f97316"/>
+
+    <!-- Right card stack -->
+    <rect x="1030" y="150" width="120" height="168" rx="8" fill="#f97316" transform="rotate(15 1090 234)"/>
+    <rect x="1010" y="140" width="120" height="168" rx="8" fill="#f97316" transform="rotate(8 1070 224)"/>
+    <rect x="990" y="130" width="120" height="168" rx="8" fill="#f97316"/>
+  </g>
+
+  <!-- URL at bottom -->
+  <text x="600" y="590" font-family="Arial, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle">optcgmarket.com</text>
+</svg>
